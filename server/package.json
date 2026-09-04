@@ -1,0 +1,27 @@
+{
+  "name": "college-eval-server",
+  "version": "1.0.0",
+  "description": "Express + Mongoose Backend for College Project Evaluation & Tracking System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "@octokit/rest": "^20.1.1",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.0",
+    "nodemailer": "^10.0.0",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
+    "zod": "^3.23.8"
+  }
+}
