@@ -307,11 +307,18 @@ export const BatchesTab = ({
                   </div>
                   <h4 className="text-sm font-bold text-foreground mb-2">{m.title}</h4>
                   {m.rubric && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{m.rubric}</p>}
-                  {m.requiresExternalReview && (
-                    <span className="text-[9px] font-bold bg-amber-500/10 text-amber-600 px-2 py-1 rounded-md border border-amber-500/20 inline-block mt-2">
-                      REQUIRES EXTERNAL REVIEW
-                    </span>
-                  )}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {m.requiresExternalReview && (
+                      <span className="text-[9px] font-bold bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-md border border-amber-500/20">
+                        EXTERNAL REVIEW
+                      </span>
+                    )}
+                    {m.requiresDeliverable && (
+                      <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20">
+                        DELIVERABLE MANDATORY
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
 

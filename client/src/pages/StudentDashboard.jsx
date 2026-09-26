@@ -478,7 +478,7 @@ export const StudentDashboard = () => {
                       }`}>
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                                 Milestone {item.order}
                               </span>
@@ -487,8 +487,22 @@ export const StudentDashboard = () => {
                                   External Review
                                 </span>
                               )}
+                              {mObj.requiresDeliverable && (
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                                  item.deliverableUrl 
+                                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                    : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                                }`}>
+                                  {item.deliverableUrl ? 'Deliverable Submitted' : 'Deliverable Mandatory'}
+                                </span>
+                              )}
                             </div>
                             <h4 className="font-bold text-base text-foreground">{mObj.title || `Milestone ${item.order}`}</h4>
+                            {mObj.deliverableInstructions && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <span className="font-semibold text-foreground">Deliverable:</span> {mObj.deliverableInstructions}
+                              </p>
+                            )}
                             {mObj.dueDate && (
                               <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mt-1.5">
                                 <Clock size={12} />
@@ -565,9 +579,17 @@ export const StudentDashboard = () => {
                                   setEditingDeliverableMilestoneId(mObj._id || item.milestoneId?._id || item.milestoneId);
                                   setDeliverableInput(item.deliverableUrl || '');
                                 }}
-                                className="text-[11px] font-bold text-primary hover:underline"
+                                className={`text-[11px] font-bold transition-all ${
+                                  !item.deliverableUrl && mObj.requiresDeliverable
+                                    ? 'bg-primary text-primary-foreground px-2.5 py-1 rounded-lg hover:bg-primary/90 shadow-sm'
+                                    : 'text-primary hover:underline'
+                                }`}
                               >
-                                {item.deliverableUrl ? 'Edit Link' : '+ Add Deliverable Link'}
+                                {item.deliverableUrl
+                                  ? 'Edit Link'
+                                  : mObj.requiresDeliverable
+                                  ? '+ Submit Mandatory Deliverable'
+                                  : '+ Add Deliverable Link'}
                               </button>
                             </div>
                           )}

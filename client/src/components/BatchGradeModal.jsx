@@ -20,10 +20,23 @@ export const BatchGradeModal = ({ isOpen, onClose, team, summaryData }) => {
   const activeMilestone = milestones.find(m => String(m.order) === String(selectedMilestoneOrder));
   const maxScore = activeMilestone?.maxScore || 100;
 
+  const requiresDeliverable = activeMilestone?.milestoneId?.requiresDeliverable || activeMilestone?.requiresDeliverable;
+  const studentsMissingDeliverable = requiresDeliverable
+    ? (summaryData?.students || []).filter(s => {
+        const scoreItem = (s.scores || []).find(sc => String(sc.order) === String(selectedMilestoneOrder));
+        return !scoreItem?.deliverableUrl?.trim();
+      })
+    : [];
+
   const handleBatchSubmit = async (e) => {
     e.preventDefault();
     if (!selectedMilestoneOrder) {
       setError('Please select a milestone to grade.');
+      return;
+    }
+
+    if (studentsMissingDeliverable.length > 0) {
+      setError(`Evaluation blocked: ${studentsMissingDeliverable.length} student(s) have not submitted their required deliverable yet.`);
       return;
     }
 
@@ -149,6 +162,25 @@ export const BatchGradeModal = ({ isOpen, onClose, team, summaryData }) => {
               </div>
             </div>
 
+            {selectedMilestoneOrder && studentsMissingDeliverable.length > 0 && (
+              <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <AlertCircle size={14} />
+                  <span>Mandatory Deliverable Missing ({studentsMissingDeliverable.length} student{studentsMissingDeliverable.length > 1 ? 's' : ''})</span>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  The following students have not submitted the mandatory milestone deliverable:
+                </p>
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {studentsMissingDeliverable.map(s => (
+                    <span key={s.student._id} className="bg-destructive/20 text-destructive font-bold px-2 py-0.5 rounded text-[10px]">
+                      {s.student.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="p-3 rounded-xl bg-muted/40 border border-border text-[11px] text-muted-foreground">
               <span className="font-bold text-foreground">Note: </span>
               This score will be applied to all <span className="font-bold text-foreground">{summaryData?.students?.length || 0}</span> students. You can still adjust individual member scores in the matrix afterwards.
@@ -164,10 +196,15 @@ export const BatchGradeModal = ({ isOpen, onClose, team, summaryData }) => {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
-                className="px-4 py-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                disabled={submitting || studentsMissingDeliverable.length > 0}
+                className="px-4 py-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={studentsMissingDeliverable.length > 0 ? 'Deliverable submissions required' : ''}
               >
-                {submitting ? 'Applying Grades...' : 'Grade Entire Team'}
+                {submitting
+                  ? 'Applying Grades...'
+                  : studentsMissingDeliverable.length > 0
+                  ? 'Blocked: Deliverables Pending'
+                  : 'Grade Entire Team'}
               </button>
             </div>
           </form>
