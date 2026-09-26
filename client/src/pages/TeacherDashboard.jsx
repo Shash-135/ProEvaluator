@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import { downloadCsv } from '../utils/exportCsv';
 import { ContributionBreakdown } from '../components/ContributionBreakdown';
+import { BatchGradeModal } from '../components/BatchGradeModal';
 
 export const TeacherDashboard = () => {
   const { openGradeModal } = useUiStore();
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [forceSyncing, setForceSyncing] = useState(false);
+  const [isBatchGradeOpen, setIsBatchGradeOpen] = useState(false);
 
   // Fetch Teacher's Assigned Teams
   const { data: teamsData, isLoading: loadingTeams } = useQuery({
@@ -319,7 +321,7 @@ export const TeacherDashboard = () => {
           {/* Milestone Evaluation Matrix (8 cols on xl) */}
           <div className="xl:col-span-8">
             <div className="bg-card border border-border rounded-2xl shadow-sm p-6 md:p-8">
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 pb-4 border-b border-border gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                     <Award size={18} />
@@ -329,6 +331,14 @@ export const TeacherDashboard = () => {
                     <p className="text-xs text-muted-foreground">Click any milestone cell to grade or provide feedback</p>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => setIsBatchGradeOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
+                >
+                  <Users size={14} />
+                  <span>Grade Entire Team</span>
+                </button>
               </div>
 
               <div className="overflow-x-auto">
@@ -400,8 +410,16 @@ export const TeacherDashboard = () => {
         </div>
       )}
 
-      {/* Grade Modal */}
+      {/* Individual Grade Modal */}
       <GradeModal />
+
+      {/* Batch Grade Modal */}
+      <BatchGradeModal
+        isOpen={isBatchGradeOpen}
+        onClose={() => setIsBatchGradeOpen(false)}
+        team={activeTeam}
+        summaryData={summaryData}
+      />
     </div>
   );
 };
