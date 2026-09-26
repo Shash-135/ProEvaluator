@@ -71,6 +71,31 @@ export const AdminDashboard = () => {
   const cohorts = cohortsData?.cohorts || [];
   const activeBatch = batchesData?.batches?.find((b) => (b.id || b._id) === selectedBatchId);
 
+  const closeBatchModal = () => {
+    setShowBatchModal(false);
+    setEditingBatch(null);
+  };
+
+  const closeCohortModal = () => {
+    setShowCohortModal(false);
+    setEditingCohort(null);
+  };
+
+  const closeMilestoneModal = () => {
+    setShowMilestoneModal(false);
+    setEditingMilestone(null);
+  };
+
+  const closeTeamModal = () => {
+    setShowTeamModal(false);
+    setEditingTeam(null);
+  };
+
+  const closeEditUserModal = () => {
+    setShowEditUserModal(false);
+    setEditingUser(null);
+  };
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] bg-background">
       <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} setSelectedBatchId={setSelectedBatchId} setSelectedCohortId={setSelectedCohortId} />
@@ -116,23 +141,26 @@ export const AdminDashboard = () => {
         </div>
       </div>
 
-      {(showBatchModal || editingBatch) && (
+      {(showBatchModal || Boolean(editingBatch)) && (
         <BatchModal
+          onClose={closeBatchModal}
           setShowBatchModal={setShowBatchModal}
           activeCohortId={selectedCohortId}
           editingBatch={editingBatch}
           setEditingBatch={setEditingBatch}
         />
       )}
-      {(showCohortModal || editingCohort) && (
+      {(showCohortModal || Boolean(editingCohort)) && (
         <CohortModal
+          onClose={closeCohortModal}
           setShowCohortModal={setShowCohortModal}
           editingCohort={editingCohort}
           setEditingCohort={setEditingCohort}
         />
       )}
-      {(showMilestoneModal || editingMilestone) && (
+      {(showMilestoneModal || Boolean(editingMilestone)) && (
         <MilestoneModal
+          onClose={closeMilestoneModal}
           setShowMilestoneModal={setShowMilestoneModal}
           activeBatchId={selectedBatchId}
           editingMilestone={editingMilestone}
@@ -150,18 +178,20 @@ export const AdminDashboard = () => {
         />
       )}
       {showAddUserModal && <AddUserModal setShowAddUserModal={setShowAddUserModal} activeBatchId={selectedBatchId} teachers={teachers} />}
-      {showAutoFormModal && <AutoFormTeamsModal setShowModal={setShowAutoFormModal} batch={activeBatch} />}
-      {showAutoAssignModal && <AutoAssignFacultyModal setShowModal={setShowAutoAssignModal} batch={activeBatch} />}
-      {(showTeamModal || editingTeam) && (
+      {showAutoFormModal && <AutoFormTeamsModal onClose={() => setShowAutoFormModal(false)} setShowModal={setShowAutoFormModal} batch={activeBatch} />}
+      {showAutoAssignModal && <AutoAssignFacultyModal onClose={() => setShowAutoAssignModal(false)} setShowModal={setShowAutoAssignModal} batch={activeBatch} />}
+      {(showTeamModal || Boolean(editingTeam)) && (
         <TeamModal
+          onClose={closeTeamModal}
           setShowModal={setShowTeamModal}
           batchId={selectedBatchId}
           editingTeam={editingTeam}
           teachers={teachers}
         />
       )}
-      {(showEditUserModal || editingUser) && (
+      {(showEditUserModal || Boolean(editingUser)) && (
         <EditUserModal
+          onClose={closeEditUserModal}
           user={editingUser}
           setShowModal={setShowEditUserModal}
           cohorts={cohorts}

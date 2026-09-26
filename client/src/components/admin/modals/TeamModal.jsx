@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
-import { Users, AlertCircle } from 'lucide-react';
+import { Users, AlertCircle, X } from 'lucide-react';
 
-export const TeamModal = ({ setShowModal, batchId, editingTeam = null, teachers = [] }) => {
+export const TeamModal = ({
+  setShowModal,
+  batchId,
+  editingTeam = null,
+  teachers = [],
+  onClose
+}) => {
   const queryClient = useQueryClient();
   const [name, setName] = useState(editingTeam?.name || '');
   const [repoUrl, setRepoUrl] = useState(editingTeam?.repoUrl || '');
@@ -19,8 +25,21 @@ export const TeamModal = ({ setShowModal, batchId, editingTeam = null, teachers 
       setAssignedTeacherId(
         editingTeam.assignedTeacherId?.id || editingTeam.assignedTeacherId?._id || editingTeam.assignedTeacherId || ''
       );
+    } else {
+      setName('');
+      setRepoUrl('');
+      setAssignedTeacherId('');
     }
+    setErrorMsg('');
   }, [editingTeam]);
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (setShowModal) {
+      setShowModal(false);
+    }
+  };
 
   const saveTeamMutation = useMutation({
     mutationFn: async (payload) => {
@@ -31,7 +50,7 @@ export const TeamModal = ({ setShowModal, batchId, editingTeam = null, teachers 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-teams'] });
-      setShowModal(false);
+      handleClose();
     },
     onError: (err) => {
       setErrorMsg(err.response?.data?.error || err.message || 'Failed to save team.');
@@ -39,8 +58,22 @@ export const TeamModal = ({ setShowModal, batchId, editingTeam = null, teachers 
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+    >
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in zoom-in-95 duration-200">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors cursor-pointer"
+          title="Close"
+        >
+          <X size={18} />
+        </button>
+
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
             <Users size={20} />
@@ -63,6 +96,10 @@ export const TeamModal = ({ setShowModal, batchId, editingTeam = null, teachers 
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            if (!name.trim()) {
+              setErrorMsg('Team name is required.');
+              return;
+            }
             const payload = {
               name: name.trim(),
               repoUrl: repoUrl.trim(),
@@ -123,15 +160,15 @@ export const TeamModal = ({ setShowModal, batchId, editingTeam = null, teachers 
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
             <button
               type="button"
-              onClick={() => setShowModal(false)}
-              className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors"
+              onClick={handleClose}
+              className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saveTeamMutation.isPending}
-              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
             >
               {saveTeamMutation.isPending ? 'Saving...' : editingTeam ? 'Save Changes' : 'Create Team'}
             </button>

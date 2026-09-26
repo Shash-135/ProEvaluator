@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
-import { Shuffle, AlertCircle, CheckCircle2, Users } from 'lucide-react';
+import { Shuffle, AlertCircle, CheckCircle2, Users, X } from 'lucide-react';
 
-export const AutoFormTeamsModal = ({ setShowModal, batch }) => {
+export const AutoFormTeamsModal = ({ setShowModal, batch, onClose }) => {
   const queryClient = useQueryClient();
   const [minTeamSize, setMinTeamSize] = useState(batch?.minTeamSize ?? 2);
   const [maxTeamSize, setMaxTeamSize] = useState(batch?.maxTeamSize ?? 4);
   const [prefix, setPrefix] = useState('Team');
   const [resultMessage, setResultMessage] = useState(null);
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (setShowModal) {
+      setShowModal(false);
+    }
+  };
 
   const autoFormMutation = useMutation({
     mutationFn: async (payload) => (await api.post('/admin/teams/auto-form', payload)).data,
@@ -19,8 +27,8 @@ export const AutoFormTeamsModal = ({ setShowModal, batch }) => {
         text: data.message || `Formed ${data.createdTeams?.length || 0} teams successfully.`
       });
       setTimeout(() => {
-        setShowModal(false);
-      }, 1800);
+        handleClose();
+      }, 1500);
     },
     onError: (err) => {
       setResultMessage({
@@ -31,8 +39,22 @@ export const AutoFormTeamsModal = ({ setShowModal, batch }) => {
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+    >
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg shadow-xl relative animate-in zoom-in-95 duration-200">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors cursor-pointer"
+          title="Close"
+        >
+          <X size={18} />
+        </button>
+
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
             <Shuffle size={20} />
@@ -124,15 +146,15 @@ export const AutoFormTeamsModal = ({ setShowModal, batch }) => {
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
             <button
               type="button"
-              onClick={() => setShowModal(false)}
-              className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors"
+              onClick={handleClose}
+              className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={autoFormMutation.isPending}
-              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <Shuffle size={16} />
               {autoFormMutation.isPending ? 'Forming Teams...' : 'Auto-Form Teams'}

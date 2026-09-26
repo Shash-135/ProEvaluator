@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
+import { BookOpen, AlertCircle, X } from 'lucide-react';
 
 export const MilestoneModal = ({
   setShowMilestoneModal,
   activeBatchId,
   editingMilestone = null,
-  setEditingMilestone = () => {}
+  setEditingMilestone = () => {},
+  onClose
 }) => {
   const queryClient = useQueryClient();
   const [mOrder, setMOrder] = useState(editingMilestone?.order ?? 1);
@@ -16,6 +18,7 @@ export const MilestoneModal = ({
   const [mRequiresExternalReview, setMRequiresExternalReview] = useState(editingMilestone?.requiresExternalReview ?? false);
   const [mRequiresDeliverable, setMRequiresDeliverable] = useState(editingMilestone?.requiresDeliverable ?? false);
   const [mDeliverableInstructions, setMDeliverableInstructions] = useState(editingMilestone?.deliverableInstructions || '');
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (editingMilestone) {
@@ -26,8 +29,26 @@ export const MilestoneModal = ({
       setMRequiresExternalReview(editingMilestone.requiresExternalReview ?? false);
       setMRequiresDeliverable(editingMilestone.requiresDeliverable ?? false);
       setMDeliverableInstructions(editingMilestone.deliverableInstructions || '');
+    } else {
+      setMOrder(1);
+      setMTitle('');
+      setMMaxScore(100);
+      setMRubric('');
+      setMRequiresExternalReview(false);
+      setMRequiresDeliverable(false);
+      setMDeliverableInstructions('');
     }
+    setErrorMsg('');
   }, [editingMilestone]);
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      if (setShowMilestoneModal) setShowMilestoneModal(false);
+      if (setEditingMilestone) setEditingMilestone(null);
+    }
+  };
 
   const saveMilestoneMutation = useMutation({
     mutationFn: async (payload) => {
@@ -38,33 +59,64 @@ export const MilestoneModal = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-milestones'] });
-      setShowMilestoneModal(false);
-      setEditingMilestone(null);
+      handleClose();
+    },
+    onError: (err) => {
+      setErrorMsg(err.response?.data?.error || err.message || 'Failed to save milestone.');
     }
   });
 
-  const handleClose = () => {
-    setShowMilestoneModal(false);
-    setEditingMilestone(null);
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+    >
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-bold text-foreground mb-4">
-          {editingMilestone ? 'Edit Milestone Template' : 'Add Milestone Template'}
-        </h3>
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors"
+          title="Close"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+            <BookOpen size={20} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-foreground">
+              {editingMilestone ? 'Edit Milestone Template' : 'Add Milestone Template'}
+            </h3>
+            <p className="text-xs text-muted-foreground">Define scoring rubric and deliverables.</p>
+          </div>
+        </div>
+
+        {errorMsg && (
+          <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold flex items-center gap-2 mb-4">
+            <AlertCircle size={16} />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            if (!mTitle.trim()) {
+              setErrorMsg('Milestone title is required.');
+              return;
+            }
             const payload = {
               order: Number(mOrder),
-              title: mTitle,
+              title: mTitle.trim(),
               maxScore: Number(mMaxScore),
-              rubric: mRubric,
+              rubric: mRubric.trim(),
               requiresExternalReview: mRequiresExternalReview,
               requiresDeliverable: mRequiresDeliverable,
-              deliverableInstructions: mDeliverableInstructions
+              deliverableInstructions: mDeliverableInstructions.trim()
             };
             if (!editingMilestone) {
               payload.batchId = activeBatchId;
@@ -79,6 +131,7 @@ export const MilestoneModal = ({
               <input
                 type="number"
                 min="1"
+                required
                 value={mOrder}
                 onChange={(e) => setMOrder(e.target.value)}
                 className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
@@ -88,6 +141,8 @@ export const MilestoneModal = ({
               <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Max Score</label>
               <input
                 type="number"
+                min="1"
+                required
                 value={mMaxScore}
                 onChange={(e) => setMMaxScore(e.target.value)}
                 className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
@@ -165,14 +220,14 @@ export const MilestoneModal = ({
             <button
               type="button"
               onClick={handleClose}
-              className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors"
+              className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saveMilestoneMutation.isPending}
-              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
             >
               {saveMilestoneMutation.isPending ? 'Saving...' : editingMilestone ? 'Save Changes' : 'Save Milestone'}
             </button>
@@ -182,4 +237,3 @@ export const MilestoneModal = ({
     </div>
   );
 };
-
