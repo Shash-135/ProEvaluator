@@ -8,5 +8,6 @@ router.post('/', authorizeAction('batch:create'), batchController.createBatch);
 router.patch('/:id', authorizeAction('batch:update'), batchController.updateBatch);
 router.patch('/:id/sizing', authorizeAction('batch:update'), batchController.updateTeamSizing);
 router.patch('/:id/archive', authorizeAction('batch:archive'), batchController.archiveBatch);
+router.delete('/:id', authorizeAction('batch:delete'), batchController.deleteBatch);
 
 module.exports = router;

@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
-import { UserCheck, UserPlus, Edit2 } from 'lucide-react';
+import { UserCheck, UserPlus, Edit2, Trash2 } from 'lucide-react';
 
-export const UsersTab = ({ setShowAddUserModal }) => {
+export const UsersTab = ({
+  setShowAddUserModal,
+  setEditingUser = () => {},
+  setShowEditUserModal = () => {},
+  cohorts = []
+}) => {
   const queryClient = useQueryClient();
   const [editingGithubUserId, setEditingGithubUserId] = useState(null);
   const [newGithubInput, setNewGithubInput] = useState('');
@@ -62,6 +67,17 @@ export const UsersTab = ({ setShowAddUserModal }) => {
     mutationFn: async (userId) => (await api.patch(`/admin/users/${userId}/promote-admin`)).data,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId) => (await api.delete(`/admin/users/${userId}`)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-teams'] });
+    },
+    onError: (err) => {
+      alert(err.response?.data?.error || err.message || 'Failed to delete user.');
     }
   });
 
@@ -155,7 +171,18 @@ export const UsersTab = ({ setShowAddUserModal }) => {
       </td>
 
       <td className="py-4 px-4 text-right">
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => {
+              setEditingUser(u);
+              setShowEditUserModal(true);
+            }}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-colors"
+            title="Edit User Profile"
+          >
+            <Edit2 size={12} />
+          </button>
+
           {u.role === 'teacher' && (
             <button
               onClick={() => promoteTeacherMutation.mutate(u.id || u._id)}
@@ -170,11 +197,27 @@ export const UsersTab = ({ setShowAddUserModal }) => {
             onClick={() => toggleUserActiveMutation.mutate({ userId: u.id || u._id, isActive: u.isActive === false })}
             className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-colors ${
               u.isActive !== false
-                ? 'bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/20'
+                ? 'bg-muted hover:bg-muted/80 text-foreground border-border'
                 : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border-emerald-500/20'
             }`}
           >
             {u.isActive !== false ? 'Deactivate' : 'Reactivate'}
+          </button>
+
+          <button
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Are you sure you want to permanently delete user '${u.name}' (${u.email})?\n\nAll their team memberships and associations will be permanently removed.`
+                )
+              ) {
+                deleteUserMutation.mutate(u.id || u._id);
+              }
+            }}
+            className="p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 transition-colors"
+            title="Delete User"
+          >
+            <Trash2 size={12} />
           </button>
         </div>
       </td>

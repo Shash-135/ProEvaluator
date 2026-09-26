@@ -10,5 +10,7 @@ router.patch('/:id/role', authorizeAction('user:promote'), userAdminController.c
 router.patch('/:id/promote-admin', authorizeAction('user:promote'), userController.promoteTeacherToAdmin);
 router.patch('/:id/active', authorizeAction('user:soft_delete'), userAdminController.toggleActiveStatus);
 router.patch('/:id/github', authorizeAction('user:update_github'), userAdminController.updateGithubUsername);
+router.patch('/:id', authorizeAction('user:update'), userAdminController.updateUser);
+router.delete('/:id', authorizeAction('user:delete'), userAdminController.deleteUser);
 
 module.exports = router;

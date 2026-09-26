@@ -11,6 +11,10 @@ import { MoveMemberModal } from '../components/admin/modals/MoveMemberModal';
 import { AssignTeacherModal } from '../components/admin/modals/AssignTeacherModal';
 import { AddUserModal } from '../components/admin/modals/AddUserModal';
 import { CohortModal } from '../components/admin/modals/CohortModal';
+import { AutoFormTeamsModal } from '../components/admin/modals/AutoFormTeamsModal';
+import { AutoAssignFacultyModal } from '../components/admin/modals/AutoAssignFacultyModal';
+import { TeamModal } from '../components/admin/modals/TeamModal';
+import { EditUserModal } from '../components/admin/modals/EditUserModal';
 
 export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('batches');
@@ -19,12 +23,27 @@ export const AdminDashboard = () => {
   const [batchDetailTab, setBatchDetailTab] = useState('milestones');
 
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [editingBatch, setEditingBatch] = useState(null);
+
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [editingMilestone, setEditingMilestone] = useState(null);
+
   const [showMoveMemberModal, setShowMoveMemberModal] = useState(false);
   const [assignTeamId, setAssignTeamId] = useState(null);
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+
   const [showCohortModal, setShowCohortModal] = useState(false);
+  const [editingCohort, setEditingCohort] = useState(null);
+
+  const [showAutoFormModal, setShowAutoFormModal] = useState(false);
+  const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
+
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [editingTeam, setEditingTeam] = useState(null);
+
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
 
   const { data: batchesData } = useQuery({
     queryKey: ['admin-batches'],
@@ -39,7 +58,7 @@ export const AdminDashboard = () => {
   const { data: allUsersData } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => (await api.get('/admin/users')).data,
-    enabled: activeTab === 'users' || showAddUserModal || assignTeamId !== null
+    enabled: activeTab === 'users' || showAddUserModal || assignTeamId !== null || showTeamModal
   });
 
   const { data: teamsData } = useQuery({
@@ -49,6 +68,8 @@ export const AdminDashboard = () => {
   });
 
   const teachers = allUsersData?.users?.filter((u) => u.role === 'teacher') || [];
+  const cohorts = cohortsData?.cohorts || [];
+  const activeBatch = batchesData?.batches?.find((b) => (b.id || b._id) === selectedBatchId);
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] bg-background">
@@ -67,25 +88,86 @@ export const AdminDashboard = () => {
               batchDetailTab={batchDetailTab}
               setBatchDetailTab={setBatchDetailTab}
               setShowBatchModal={setShowBatchModal}
+              setEditingBatch={setEditingBatch}
               setShowCohortModal={setShowCohortModal}
+              setEditingCohort={setEditingCohort}
               setShowMilestoneModal={setShowMilestoneModal}
+              setEditingMilestone={setEditingMilestone}
               setShowMoveMemberModal={setShowMoveMemberModal}
               setAssignTeamId={setAssignTeamId}
               setSelectedTeacherId={setSelectedTeacherId}
+              setShowAutoFormModal={setShowAutoFormModal}
+              setShowAutoAssignModal={setShowAutoAssignModal}
+              setShowTeamModal={setShowTeamModal}
+              setEditingTeam={setEditingTeam}
+              teachers={teachers}
             />
           )}
 
-          {activeTab === 'users' && <UsersTab setShowAddUserModal={setShowAddUserModal} />}
+          {activeTab === 'users' && (
+            <UsersTab
+              setShowAddUserModal={setShowAddUserModal}
+              setEditingUser={setEditingUser}
+              setShowEditUserModal={setShowEditUserModal}
+              cohorts={cohorts}
+            />
+          )}
 
         </div>
       </div>
 
-      {showBatchModal && <BatchModal setShowBatchModal={setShowBatchModal} activeCohortId={selectedCohortId} />}
-      {showCohortModal && <CohortModal setShowCohortModal={setShowCohortModal} />}
-      {showMilestoneModal && <MilestoneModal setShowMilestoneModal={setShowMilestoneModal} activeBatchId={selectedBatchId} />}
+      {(showBatchModal || editingBatch) && (
+        <BatchModal
+          setShowBatchModal={setShowBatchModal}
+          activeCohortId={selectedCohortId}
+          editingBatch={editingBatch}
+          setEditingBatch={setEditingBatch}
+        />
+      )}
+      {(showCohortModal || editingCohort) && (
+        <CohortModal
+          setShowCohortModal={setShowCohortModal}
+          editingCohort={editingCohort}
+          setEditingCohort={setEditingCohort}
+        />
+      )}
+      {(showMilestoneModal || editingMilestone) && (
+        <MilestoneModal
+          setShowMilestoneModal={setShowMilestoneModal}
+          activeBatchId={selectedBatchId}
+          editingMilestone={editingMilestone}
+          setEditingMilestone={setEditingMilestone}
+        />
+      )}
       {showMoveMemberModal && <MoveMemberModal setShowMoveMemberModal={setShowMoveMemberModal} teamsData={teamsData} />}
-      {assignTeamId && <AssignTeacherModal assignTeamId={assignTeamId} setAssignTeamId={setAssignTeamId} selectedTeacherId={selectedTeacherId} setSelectedTeacherId={setSelectedTeacherId} teachers={teachers} />}
+      {assignTeamId && (
+        <AssignTeacherModal
+          assignTeamId={assignTeamId}
+          setAssignTeamId={setAssignTeamId}
+          selectedTeacherId={selectedTeacherId}
+          setSelectedTeacherId={setSelectedTeacherId}
+          teachers={teachers}
+        />
+      )}
       {showAddUserModal && <AddUserModal setShowAddUserModal={setShowAddUserModal} activeBatchId={selectedBatchId} teachers={teachers} />}
+      {showAutoFormModal && <AutoFormTeamsModal setShowModal={setShowAutoFormModal} batch={activeBatch} />}
+      {showAutoAssignModal && <AutoAssignFacultyModal setShowModal={setShowAutoAssignModal} batch={activeBatch} />}
+      {(showTeamModal || editingTeam) && (
+        <TeamModal
+          setShowModal={setShowTeamModal}
+          batchId={selectedBatchId}
+          editingTeam={editingTeam}
+          teachers={teachers}
+        />
+      )}
+      {(showEditUserModal || editingUser) && (
+        <EditUserModal
+          user={editingUser}
+          setShowModal={setShowEditUserModal}
+          cohorts={cohorts}
+        />
+      )}
     </div>
   );
 };
+

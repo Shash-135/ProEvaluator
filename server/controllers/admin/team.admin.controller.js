@@ -58,3 +58,44 @@ exports.overrideTeamStatus = async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 };
+
+exports.createTeam = async (req, res) => {
+  try {
+    const team = await teamAdminService.createTeam(req.body, req.user._id);
+    return res.status(201).json({ message: 'Team created successfully', team: serializeTeam(team) });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+exports.updateTeam = async (req, res) => {
+  try {
+    const team = await teamAdminService.updateTeam(req.params.id, req.body, req.user._id);
+    return res.json({ message: 'Team updated successfully', team: serializeTeam(team) });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+exports.autoFormTeams = async (req, res) => {
+  try {
+    const result = await teamAdminService.autoFormTeams(req.body, req.user._id);
+    return res.json({
+      message: result.message,
+      createdTeams: serializeTeams(result.createdTeams),
+      remainingCount: result.remainingCount
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+exports.autoAssignTeachers = async (req, res) => {
+  try {
+    const result = await teamAdminService.autoAssignTeachers(req.body, req.user._id);
+    return res.json(result);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
