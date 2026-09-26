@@ -10,8 +10,10 @@ import {
   ChevronRight,
   BookOpen,
   Clock,
-  ExternalLink
+  ExternalLink,
+  FileSpreadsheet
 } from 'lucide-react';
+import { downloadCsv } from '../utils/exportCsv';
 
 export const ExternalDashboard = () => {
   const { openGradeModal } = useUiStore();
@@ -48,6 +50,30 @@ export const ExternalDashboard = () => {
   }, {});
 
   const activeTeam = teams.find(t => t._id === activeTeamId);
+
+  const handleExportCsv = () => {
+    if (!summaryData?.students || summaryData.students.length === 0) return;
+    const sampleScores = summaryData.students[0]?.scores || [];
+    const milestoneHeaders = sampleScores.map(s => `M${s.order} (${s.milestoneId?.title || ''})`);
+    const headers = ['Student Name', 'Team Name', ...milestoneHeaders, 'External Total Score', 'Percent Completed'];
+
+    const rows = summaryData.students.map(row => {
+      const scoreCols = (row.scores || []).map(s => {
+        if (!s.requiresExternalReview) return 'Internal Only';
+        return s.externalStatus === 'graded' ? s.externalScore : 'Pending';
+      });
+      return [
+        row.student.name,
+        activeTeam?.name || '',
+        ...scoreCols,
+        row.progressSummary?.totalScore || 0,
+        `${row.progressSummary?.percentComplete || 0}%`
+      ];
+    });
+
+    const filename = `${activeTeam?.name || 'team'}_external_grades_${new Date().toISOString().split('T')[0]}`;
+    downloadCsv(filename, headers, rows);
+  };
 
   return (
     <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
@@ -86,15 +112,28 @@ export const ExternalDashboard = () => {
           </h1>
         </div>
 
-        {activeTeam?.repoUrl && (
-          <a
-            href={activeTeam.repoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="px-3.5 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-bold hover:border-amber-500/40 hover:text-amber-600 transition-all flex items-center gap-1.5 shadow-sm"
-          >
-            <Github size={14} /> Repository <ExternalLink size={12} />
-          </a>
+        {activeTeam && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCsv}
+              className="px-3.5 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-bold hover:bg-muted transition-all flex items-center gap-1.5 shadow-sm"
+              title="Download Team Grade Sheet CSV"
+            >
+              <FileSpreadsheet size={14} className="text-amber-600" />
+              <span>Export CSV</span>
+            </button>
+
+            {activeTeam.repoUrl && (
+              <a
+                href={activeTeam.repoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-bold hover:border-amber-500/40 hover:text-amber-600 transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <Github size={14} /> Repository <ExternalLink size={12} />
+              </a>
+            )}
+          </div>
         )}
       </div>
 
