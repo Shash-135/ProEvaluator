@@ -58,6 +58,13 @@ const scoreItemSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'graded'],
       default: 'pending'
+    },
+    deliverableUrl: {
+      type: String,
+      default: ''
+    },
+    submittedAt: {
+      type: Date
     }
   },
   { _id: false }

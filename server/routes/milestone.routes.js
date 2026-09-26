@@ -15,6 +15,7 @@ router.get('/', milestoneController.getMilestonesByBatch);
 
 // Student scores & grading
 router.get('/students/:studentId', scopeStudent, milestoneController.getStudentScores);
+router.patch('/students/:studentId/deliverable', scopeStudent, milestoneController.submitDeliverable);
 router.patch('/students/:studentId/:milestoneId', authorize([ROLES.TEACHER]), scopeStudent, milestoneController.gradeMilestone);
 
 // Team-wide grading overview grid
