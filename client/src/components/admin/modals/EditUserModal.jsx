@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
-import { UserCheck, AlertCircle } from 'lucide-react';
+import { UserCheck, AlertCircle, X } from 'lucide-react';
 
-export const EditUserModal = ({ user, setShowModal, cohorts = [] }) => {
+export const EditUserModal = ({ user, setShowModal, cohorts = [], onClose }) => {
   const queryClient = useQueryClient();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -12,11 +12,30 @@ export const EditUserModal = ({ user, setShowModal, cohorts = [] }) => {
   const [githubUsername, setGithubUsername] = useState(user?.githubUsername || '');
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setRole(user.role || 'student');
+      setCohortId(user.cohortId?._id || user.cohortId || user.cohort?.id || '');
+      setGithubUsername(user.githubUsername || '');
+    }
+    setErrorMsg('');
+  }, [user]);
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (setShowModal) {
+      setShowModal(false);
+    }
+  };
+
   const updateUserMutation = useMutation({
     mutationFn: async (payload) => (await api.patch(`/admin/users/${user?.id || user?._id}`, payload)).data,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      setShowModal(false);
+      handleClose();
     },
     onError: (err) => {
       setErrorMsg(err.response?.data?.error || err.message || 'Failed to update user.');
@@ -24,8 +43,22 @@ export const EditUserModal = ({ user, setShowModal, cohorts = [] }) => {
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+    >
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in zoom-in-95 duration-200">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors cursor-pointer"
+          title="Close"
+        >
+          <X size={18} />
+        </button>
+
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
             <UserCheck size={20} />
@@ -46,12 +79,20 @@ export const EditUserModal = ({ user, setShowModal, cohorts = [] }) => {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            if (!name.trim()) {
+              setErrorMsg('Full name is required.');
+              return;
+            }
+            if (!email.trim()) {
+              setErrorMsg('Email address is required.');
+              return;
+            }
             updateUserMutation.mutate({
-              name,
-              email,
+              name: name.trim(),
+              email: email.trim(),
               role,
               cohortId: role === 'student' ? cohortId || null : null,
-              githubUsername
+              githubUsername: githubUsername.trim()
             });
           }}
           className="space-y-4"
@@ -136,15 +177,15 @@ export const EditUserModal = ({ user, setShowModal, cohorts = [] }) => {
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
             <button
               type="button"
-              onClick={() => setShowModal(false)}
-              className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors"
+              onClick={handleClose}
+              className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={updateUserMutation.isPending}
-              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
             >
               {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
             </button>

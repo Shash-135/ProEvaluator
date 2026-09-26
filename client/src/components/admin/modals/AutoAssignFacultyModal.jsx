@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
-import { UserCheck, AlertCircle, CheckCircle2, Award } from 'lucide-react';
+import { UserCheck, AlertCircle, CheckCircle2, Award, X } from 'lucide-react';
 
-export const AutoAssignFacultyModal = ({ setShowModal, batch }) => {
+export const AutoAssignFacultyModal = ({ setShowModal, batch, onClose }) => {
   const queryClient = useQueryClient();
   const [onlyUnassigned, setOnlyUnassigned] = useState(false);
   const [resultMessage, setResultMessage] = useState(null);
   const [assignments, setAssignments] = useState(null);
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (setShowModal) {
+      setShowModal(false);
+    }
+  };
 
   const autoAssignMutation = useMutation({
     mutationFn: async (payload) => (await api.post('/admin/teams/auto-assign-teachers', payload)).data,
@@ -28,8 +36,22 @@ export const AutoAssignFacultyModal = ({ setShowModal, batch }) => {
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+    >
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg shadow-xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors cursor-pointer"
+          title="Close"
+        >
+          <X size={18} />
+        </button>
+
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600">
             <UserCheck size={20} />
@@ -93,15 +115,15 @@ export const AutoAssignFacultyModal = ({ setShowModal, batch }) => {
             <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
-                className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors"
+                onClick={handleClose}
+                className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={autoAssignMutation.isPending}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 <UserCheck size={16} />
                 {autoAssignMutation.isPending ? 'Distributing Teams...' : 'Distribute Teams Equally'}
@@ -123,7 +145,7 @@ export const AutoAssignFacultyModal = ({ setShowModal, batch }) => {
                       {item.teams?.length || 0} Teams
                     </span>
                     <span className="text-[10px] text-muted-foreground block truncate max-w-[150px]">
-                      {item.teams?.map(t => t.name).join(', ')}
+                      {item.teams?.map((t) => t.name).join(', ')}
                     </span>
                   </div>
                 </div>
@@ -132,8 +154,8 @@ export const AutoAssignFacultyModal = ({ setShowModal, batch }) => {
             <div className="flex justify-end pt-4 border-t border-border">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
-                className="px-5 py-2.5 bg-primary text-primary-foreground font-bold text-sm rounded-xl shadow-sm hover:bg-primary/90 transition-colors"
+                onClick={handleClose}
+                className="px-5 py-2.5 bg-primary text-primary-foreground font-bold text-sm rounded-xl shadow-sm hover:bg-primary/90 transition-colors cursor-pointer"
               >
                 Done
               </button>
