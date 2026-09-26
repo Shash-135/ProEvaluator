@@ -12,8 +12,9 @@ import {
   Award,
   Clock,
   MessageSquare,
-  ChevronRight,
-  BarChart2
+  Sparkles,
+  GitBranch,
+  CheckCircle2
 } from 'lucide-react';
 
 export const StudentDashboard = () => {
@@ -22,7 +23,6 @@ export const StudentDashboard = () => {
 
   const [toStudentId, setToStudentId] = useState('');
   const [repoUrlInput, setRepoUrlInput] = useState('');
-
   const [selectedBatchId, setSelectedBatchId] = useState('');
 
   // Fetch batches for user's cohort
@@ -112,24 +112,29 @@ export const StudentDashboard = () => {
   const studentScore = scoresData?.studentScore;
   const myMetrics = metricsData?.metrics?.students?.find((s) => s.studentId === user?.id);
 
+  const completedMilestones = studentScore?.scores?.filter(s => s.status === 'graded').length || 0;
+  const totalMilestones = studentScore?.scores?.length || 0;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
       
-      {/* Top Header & Progress */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-border">
+      {/* Top Header & Overview Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-border">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-semibold text-xs mb-3 border border-primary/20">
-            <BookOpen size={14} /> Student Workspace
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold text-xs">
+              <BookOpen size={12} /> Student Workspace
+            </span>
           </div>
-          <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Project Dashboard</h2>
+          <h1 className="text-3xl font-black text-foreground tracking-tight">Project Overview</h1>
           
           {batchesData?.batches?.length > 0 && (
-            <div className="mt-4 flex items-center gap-3">
-              <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Semester Context:</label>
+            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground font-semibold">
+              <span>Semester:</span>
               <select
                 value={selectedBatchId}
                 onChange={(e) => setSelectedBatchId(e.target.value)}
-                className="bg-background border border-border rounded-xl px-4 py-2 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-sm cursor-pointer"
+                className="bg-card border border-border rounded-lg px-3 py-1.5 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer shadow-sm"
               >
                 {batchesData.batches.map(b => (
                   <option key={b._id || b.id} value={b._id || b.id}>{b.name}</option>
@@ -140,19 +145,25 @@ export const StudentDashboard = () => {
         </div>
 
         {studentScore?.progressSummary && (
-          <div className="flex bg-card border border-border rounded-2xl p-1 shadow-sm">
-            <div className="px-6 py-3 flex flex-col justify-center">
-              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Progress</span>
-              <div className="flex items-baseline gap-1">
+          <div className="flex items-center gap-4 bg-card border border-border rounded-2xl p-4 shadow-sm">
+            <div className="space-y-1 pr-4 border-r border-border">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Completion</div>
+              <div className="flex items-center gap-3">
                 <span className="text-2xl font-black text-primary">{studentScore.progressSummary.percentComplete}%</span>
+                <div className="w-20 h-2 bg-muted rounded-full overflow-hidden hidden sm:block">
+                  <div 
+                    className="h-full bg-primary rounded-full transition-all duration-500" 
+                    style={{ width: `${Math.min(studentScore.progressSummary.percentComplete, 100)}%` }}
+                  />
+                </div>
               </div>
             </div>
-            <div className="w-px bg-border my-2"></div>
-            <div className="px-6 py-3 flex flex-col justify-center">
-              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Total Score</span>
+            
+            <div className="space-y-1 pl-2">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Score</div>
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-black text-foreground">{studentScore.progressSummary.totalScore}</span>
-                <span className="text-sm font-semibold text-muted-foreground">pts</span>
+                <span className="text-xs font-bold text-muted-foreground">pts</span>
               </div>
             </div>
           </div>
@@ -161,71 +172,92 @@ export const StudentDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Column (Team & Metrics) - col-span-4 on large screens */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* Left Column: Team & Stats (col-span-5) */}
+        <div className="lg:col-span-5 space-y-6">
           
           {/* Team Card */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110 duration-500"></div>
-            
-            <div className="flex items-center justify-between mb-6 relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <Users size={20} />
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Users size={18} />
                 </div>
-                <h3 className="font-bold text-lg text-foreground tracking-tight">My Team</h3>
+                <div>
+                  <h2 className="font-extrabold text-base text-foreground leading-snug">My Team</h2>
+                  <p className="text-xs text-muted-foreground">Team status & roster</p>
+                </div>
               </div>
+
               {team && (
-                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
                   team.status === 'active'
                     ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                     : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
                 }`}>
-                  {team.status.toUpperCase()}
+                  {team.status}
                 </span>
               )}
             </div>
 
             {team ? (
-              <div className="space-y-5 relative z-10">
-                <div className="p-4 rounded-xl bg-muted/50 border border-border">
-                  <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Team Name</div>
-                  <div className="text-base font-bold text-foreground mt-1">{team.name}</div>
-                  <div className="text-xs text-primary font-medium mt-1">
-                    Evaluator: {team.assignedTeacherId ? team.assignedTeacherId.name : 'Awaiting Assignment'}
+              <div className="space-y-5">
+                <div className="p-4 rounded-xl bg-muted/30 border border-border flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Team Name</span>
+                    <span className="text-base font-bold text-foreground mt-0.5 block">{team.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Evaluator</span>
+                    <span className="text-xs font-semibold text-primary mt-0.5 block">
+                      {team.assignedTeacherId?.name || 'Unassigned'}
+                    </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Members</label>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5">Members ({team.members.length})</div>
                   <div className="space-y-2">
                     {team.members.map((m) => (
                       <div key={m._id} className="p-3 rounded-xl bg-background border border-border flex items-center justify-between hover:border-primary/30 transition-colors">
-                        <div className="flex items-center gap-2">
-                           <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                             {m.name.charAt(0)}
-                           </div>
-                           <span className="font-semibold text-sm text-foreground">{m.name}</span>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                            {m.name.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="font-bold text-sm text-foreground block">{m.name}</span>
+                            {m._id === user?.id && (
+                              <span className="text-[10px] text-primary font-semibold">You</span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-muted-foreground text-xs bg-muted px-2 py-0.5 rounded-md">@{m.githubUsername || 'unlinked'}</span>
+                        <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-lg">
+                          @{m.githubUsername || 'unlinked'}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
 
+                {/* GitHub Repository Link */}
                 <div className="pt-2">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">GitHub Repository</label>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">GitHub Repository</div>
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      defaultValue={team.repoUrl || ''}
-                      onChange={(e) => setRepoUrlInput(e.target.value)}
-                      placeholder="org/repo"
-                      className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
-                    />
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                        <GitBranch size={14} />
+                      </div>
+                      <input
+                        type="text"
+                        defaultValue={team.repoUrl || ''}
+                        onChange={(e) => setRepoUrlInput(e.target.value)}
+                        placeholder="owner/repository"
+                        className="w-full bg-background border border-border rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      />
+                    </div>
                     <button
                       onClick={() => updateRepoMutation.mutate(repoUrlInput)}
-                      className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm rounded-xl transition-colors shadow-sm"
+                      disabled={updateRepoMutation.isPending}
+                      className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl transition-all shadow-sm disabled:opacity-50"
                     >
                       Save
                     </button>
@@ -233,65 +265,67 @@ export const StudentDashboard = () => {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-6 relative z-10">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-                   <Users size={24} />
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-muted/30 border border-border">
+                  <p className="text-xs font-bold text-foreground">You are not in a team yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Form a team with a classmate to start milestone tracking.</p>
                 </div>
-                <p className="text-sm font-bold text-foreground mb-6">No Team Assigned</p>
-                
-                <div className="space-y-3 text-left bg-muted/30 p-4 rounded-xl border border-border">
+
+                <div className="space-y-3">
                   <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Invite Classmate</label>
                   <select
                     value={toStudentId}
                     onChange={(e) => setToStudentId(e.target.value)}
-                    className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="">-- Select student --</option>
+                    <option value="">-- Choose classmate from roster --</option>
                     {rosterData?.students
                       ?.filter((s) => s._id !== user?.id)
                       .map((s) => (
                         <option key={s._id} value={s._id}>
-                          {s.name} ({s.githubUsername || s.email})
+                          {s.name} ({s.githubUsername ? `@${s.githubUsername}` : s.email})
                         </option>
                       ))}
                   </select>
                   <button
                     onClick={() => sendRequestMutation.mutate({ toStudentId, batchId: selectedBatchId })}
-                    disabled={!toStudentId}
-                    className="w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!toStudentId || sendRequestMutation.isPending}
+                    className="w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50"
                   >
-                    <UserPlus size={16} /> Send Invitation
+                    <UserPlus size={14} /> Send Team Invite
                   </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Pending Invitations */}
+          {/* Pending Invitations Alert */}
           {requestsData?.incoming && requestsData.incoming.length > 0 && (
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm border-l-4 border-l-amber-500">
-              <h3 className="font-bold text-sm text-foreground mb-4 flex items-center gap-2">
-                <Clock size={16} className="text-amber-500" /> Pending Invitations
-              </h3>
-              <div className="space-y-3">
+            <div className="bg-card border border-amber-500/30 rounded-2xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-amber-700">Pending Invitations ({requestsData.incoming.length})</h3>
+              </div>
+
+              <div className="space-y-2">
                 {requestsData.incoming.map((req) => (
                   <div key={req._id} className="p-3 rounded-xl bg-background border border-border flex items-center justify-between">
                     <div>
-                      <div className="font-semibold text-sm text-foreground">{req.fromStudent?.name}</div>
-                      <div className="text-[11px] text-muted-foreground">@{req.fromStudent?.githubUsername}</div>
+                      <span className="font-bold text-sm text-foreground block">{req.fromStudent?.name}</span>
+                      <span className="text-[11px] text-muted-foreground">@{req.fromStudent?.githubUsername || 'unlinked'}</span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5">
                       <button
                         onClick={() => acceptRequestMutation.mutate(req._id)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                        className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
                         title="Accept"
                       >
                         <Check size={16} />
                       </button>
                       <button
                         onClick={() => rejectRequestMutation.mutate(req._id)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
-                        title="Reject"
+                        className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                        title="Decline"
                       >
                         <X size={16} />
                       </button>
@@ -302,105 +336,136 @@ export const StudentDashboard = () => {
             </div>
           )}
 
-          {/* Personal GitHub Stats */}
+          {/* Personal GitHub Contributions */}
           {myMetrics && (
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center">
-                  <Github size={20} />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center">
+                    <Github size={16} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground">My GitHub Stats</h3>
+                    <p className="text-[10px] text-muted-foreground">Synchronized repository contributions</p>
+                  </div>
                 </div>
-                <h3 className="font-bold text-lg text-foreground tracking-tight">My Contributions</h3>
               </div>
               
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-3 rounded-xl bg-background border border-border text-center flex flex-col justify-center items-center">
-                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Commits</span>
-                  <span className="font-black text-foreground text-xl">{myMetrics.commitCount}</span>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block mb-1">Commits</span>
+                  <span className="font-black text-foreground text-xl block">{myMetrics.commitCount}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-center flex flex-col justify-center items-center">
-                  <span className="text-[10px] text-emerald-600/70 font-bold uppercase tracking-wider mb-1">Additions</span>
-                  <span className="font-black text-emerald-600 text-xl">+{myMetrics.linesAdded}</span>
+                <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                  <span className="text-[10px] text-emerald-600/70 font-bold uppercase tracking-wider block mb-1">Added</span>
+                  <span className="font-black text-emerald-600 text-xl block">+{myMetrics.linesAdded}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-center flex flex-col justify-center items-center">
-                  <span className="text-[10px] text-destructive/70 font-bold uppercase tracking-wider mb-1">Deletions</span>
-                  <span className="font-black text-destructive text-xl">-{myMetrics.linesDeleted}</span>
+                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+                  <span className="text-[10px] text-destructive/70 font-bold uppercase tracking-wider block mb-1">Deleted</span>
+                  <span className="font-black text-destructive text-xl block">-{myMetrics.linesDeleted}</span>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Right Column: Milestone Timeline - col-span-8 on large screens */}
-        <div className="lg:col-span-8">
-          <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-sm h-full">
-            <div className="flex items-center gap-3 mb-8">
-               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                  <Award size={20} />
+        {/* Right Column: Milestone Timeline (col-span-7) */}
+        <div className="lg:col-span-7">
+          <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                  <Award size={18} />
                 </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground tracking-tight">Milestone Tracker</h3>
+                <div>
+                  <h2 className="text-lg font-black text-foreground">Milestone Roadmap</h2>
+                  <p className="text-xs text-muted-foreground">Evaluation status and faculty feedback</p>
+                </div>
               </div>
+
+              {totalMilestones > 0 && (
+                <span className="text-xs font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                  {completedMilestones} of {totalMilestones} Completed
+                </span>
+              )}
             </div>
 
-            <div className="relative border-l-2 border-muted ml-4 space-y-8 pb-4">
-              {studentScore?.scores?.map((item) => {
-                const mObj = item.milestoneId || {};
-                const isGraded = item.status === 'graded';
+            {(!studentScore?.scores || studentScore.scores.length === 0) ? (
+              <div className="py-12 text-center text-muted-foreground bg-muted/20 border border-border rounded-xl">
+                <Sparkles size={24} className="mx-auto mb-2 text-muted-foreground/60" />
+                <p className="text-xs font-bold text-foreground">No Milestones Assigned</p>
+                <p className="text-xs text-muted-foreground mt-1">Milestones will appear here once configured by the department admin.</p>
+              </div>
+            ) : (
+              <div className="relative border-l-2 border-muted ml-3.5 space-y-6 pb-2">
+                {studentScore.scores.map((item) => {
+                  const mObj = item.milestoneId || {};
+                  const isGraded = item.status === 'graded';
 
-                return (
-                  <div key={item.order} className="relative pl-8">
-                    {/* Timeline Node */}
-                    <div className={`absolute -left-[17px] top-1 w-8 h-8 rounded-full border-4 border-card flex items-center justify-center text-[10px] font-black shadow-sm ${
-                      isGraded ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {item.order}
-                    </div>
-
-                    <div className={`p-5 rounded-2xl border transition-all duration-200 ${
-                      isGraded
-                        ? 'bg-primary/5 border-primary/20 shadow-sm'
-                        : 'bg-background border-border hover:border-border/80'
-                    }`}>
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                        
-                        <div>
-                          <h4 className="font-bold text-base text-foreground mb-1">{mObj.title || `Milestone ${item.order}`}</h4>
-                          {mObj.dueDate && (
-                            <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                              <Clock size={12} />
-                              Due: {new Date(mObj.dueDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="shrink-0 bg-background px-4 py-2 rounded-xl border border-border shadow-sm">
-                          {isGraded ? (
-                            <div className="text-center">
-                              <span className="text-xl font-black text-foreground">{item.score}</span>
-                              <span className="text-sm font-semibold text-muted-foreground"> / {item.maxScore}</span>
-                            </div>
-                          ) : (
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                              Pending Evaluation
-                            </span>
-                          )}
-                        </div>
+                  return (
+                    <div key={item.order} className="relative pl-7">
+                      {/* Node Bullet */}
+                      <div className={`absolute -left-[15px] top-1 w-7 h-7 rounded-full border-4 border-card flex items-center justify-center text-[10px] font-black shadow-sm ${
+                        isGraded ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {isGraded ? <Check size={12} strokeWidth={3} /> : item.order}
                       </div>
 
-                      {item.comments && (
-                        <div className="mt-4 p-4 rounded-xl bg-background border border-border text-sm text-foreground flex items-start gap-3">
-                          <MessageSquare size={16} className="text-primary shrink-0 mt-0.5" />
+                      <div className={`p-5 rounded-2xl border transition-all ${
+                        isGraded
+                          ? 'bg-primary/5 border-primary/20 shadow-sm'
+                          : 'bg-background border-border'
+                      }`}>
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                           <div>
-                            <span className="font-bold text-muted-foreground block text-[10px] uppercase tracking-wider mb-1">Faculty Feedback</span>
-                            <p className="leading-relaxed">{item.comments}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                Milestone {item.order}
+                              </span>
+                              {mObj.requiresExternalReview && (
+                                <span className="text-[9px] font-bold bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full border border-amber-500/20">
+                                  External Review
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="font-bold text-base text-foreground">{mObj.title || `Milestone ${item.order}`}</h4>
+                            {mObj.dueDate && (
+                              <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mt-1.5">
+                                <Clock size={12} />
+                                Due {new Date(mObj.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="shrink-0">
+                            {isGraded ? (
+                              <div className="bg-card px-3.5 py-1.5 rounded-xl border border-primary/20 text-center shadow-sm">
+                                <span className="text-lg font-black text-primary">{item.score}</span>
+                                <span className="text-xs font-semibold text-muted-foreground"> / {item.maxScore}</span>
+                              </div>
+                            ) : (
+                              <span className="inline-block text-[11px] font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-lg">
+                                In Progress
+                              </span>
+                            )}
                           </div>
                         </div>
-                      )}
+
+                        {item.comments && (
+                          <div className="mt-4 p-3.5 rounded-xl bg-card border border-border text-xs text-foreground flex items-start gap-2.5">
+                            <MessageSquare size={14} className="text-primary shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold text-muted-foreground text-[10px] uppercase tracking-wider block mb-0.5">Faculty Feedback</span>
+                              <p className="leading-relaxed text-foreground">{item.comments}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

@@ -112,8 +112,9 @@ export const BatchesTab = ({
           ))}
 
           {(!cohortsData?.cohorts || cohortsData.cohorts.length === 0) && (
-            <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed border-border rounded-2xl">
-               <p className="text-sm font-medium">No cohorts created yet.</p>
+            <div className="col-span-full py-16 text-center bg-card border border-border rounded-2xl shadow-sm">
+               <p className="text-sm font-bold text-foreground">No cohorts created yet.</p>
+               <p className="text-xs text-muted-foreground mt-1">Create an academic cohort to begin setting up semesters and teams.</p>
             </div>
           )}
         </div>
@@ -192,8 +193,9 @@ export const BatchesTab = ({
           ))}
 
           {cohortBatches.length === 0 && (
-            <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed border-border rounded-2xl">
-               <p className="text-sm font-medium">No semesters created for this cohort yet.</p>
+            <div className="col-span-full py-16 text-center bg-card border border-border rounded-2xl shadow-sm">
+               <p className="text-sm font-bold text-foreground">No semesters created for this cohort yet.</p>
+               <p className="text-xs text-muted-foreground mt-1">Add a semester to configure milestone requirements and teams.</p>
             </div>
           )}
         </div>
@@ -280,8 +282,9 @@ export const BatchesTab = ({
               ))}
 
               {(!milestonesData?.milestones || milestonesData.milestones.length === 0) && (
-                <div className="col-span-full py-8 text-center text-muted-foreground border-2 border-dashed border-border rounded-xl">
-                  <p className="text-xs font-medium">No milestone templates defined for this batch yet.</p>
+                <div className="col-span-full py-12 text-center bg-muted/20 border border-border rounded-xl">
+                  <p className="text-xs font-bold text-foreground">No milestone templates defined yet</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Click 'Add Milestone' above to create evaluation templates.</p>
                 </div>
               )}
             </div>
@@ -368,7 +371,10 @@ export const BatchesTab = ({
               ))}
 
               {(!teamsData?.teams || teamsData.teams.length === 0) && (
-                <p className="text-xs text-muted-foreground text-center py-8 border-2 border-dashed border-border rounded-xl">No teams formed in this batch yet.</p>
+                <div className="py-12 text-center bg-muted/20 border border-border rounded-xl">
+                  <p className="text-xs font-bold text-foreground">No teams formed in this batch yet</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Teams will appear here as students form groups or accept invitations.</p>
+                </div>
               )}
             </div>
          </div>

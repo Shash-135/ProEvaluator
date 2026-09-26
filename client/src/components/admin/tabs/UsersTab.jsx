@@ -261,16 +261,18 @@ export const UsersTab = ({ setShowAddUserModal }) => {
             
             {activeRoleTab === 'faculty' && staffUsers.length === 0 && (
               <tr>
-                <td colSpan="6" className="py-8 text-center text-muted-foreground font-medium border-2 border-dashed border-border rounded-xl">
-                  No faculty found.
+                <td colSpan="6" className="py-12 text-center text-muted-foreground bg-muted/10 font-medium">
+                  <p className="text-xs font-bold text-foreground">No faculty members found</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Click "Add User" above to register faculty and evaluators.</p>
                 </td>
               </tr>
             )}
 
             {activeRoleTab === 'students' && cohortKeys.length === 0 && (
               <tr>
-                <td colSpan="6" className="py-8 text-center text-muted-foreground font-medium border-2 border-dashed border-border rounded-xl">
-                  No students found.
+                <td colSpan="6" className="py-12 text-center text-muted-foreground bg-muted/10 font-medium">
+                  <p className="text-xs font-bold text-foreground">No students registered yet</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Students will appear once they sign up and complete onboarding.</p>
                 </td>
               </tr>
             )}

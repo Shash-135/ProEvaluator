@@ -10,11 +10,11 @@ import {
   RefreshCw,
   Clock,
   ExternalLink,
-  Code2,
-  ChevronDown,
-  LayoutDashboard,
-  ArrowLeft,
-  BookOpen
+  ChevronRight,
+  BookOpen,
+  UserCheck,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 export const TeacherDashboard = () => {
@@ -62,8 +62,8 @@ export const TeacherDashboard = () => {
   const metrics = metricsData?.metrics;
 
   const groupedTeams = teams.reduce((acc, team) => {
-    const cohortName = team.batch?.cohort?.name || 'Unknown Cohort';
-    const batchName = team.batch?.name || 'Unknown Semester';
+    const cohortName = team.batch?.cohort?.name || 'Academic Cohort';
+    const batchName = team.batch?.name || 'Semester';
     const groupName = `${cohortName} - ${batchName}`;
     if (!acc[groupName]) acc[groupName] = [];
     acc[groupName].push(team);
@@ -71,224 +71,246 @@ export const TeacherDashboard = () => {
   }, {});
 
   return (
-    <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
       
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between pb-6 border-b border-border gap-6">
+      {/* Breadcrumbs & Navigation Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-border gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 font-semibold text-xs mb-3 border border-blue-500/20">
-            <LayoutDashboard size={14} /> Faculty Evaluation Portal
-          </div>
-          <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
-            {activeTeamId ? activeTeam?.name : selectedGroup ? selectedGroup : 'Milestone Evaluation'}
-          </h2>
+          <nav className="flex items-center gap-2 text-xs font-bold text-muted-foreground mb-2">
+            <button 
+              onClick={() => { setSelectedGroup(''); setSelectedTeamId(''); }}
+              className={`hover:text-primary transition-colors ${!selectedGroup && !activeTeamId ? 'text-primary' : ''}`}
+            >
+              Faculty Portal
+            </button>
+            {selectedGroup && (
+              <>
+                <ChevronRight size={12} />
+                <button 
+                  onClick={() => setSelectedTeamId('')}
+                  className={`hover:text-primary transition-colors ${!activeTeamId ? 'text-primary' : ''}`}
+                >
+                  {selectedGroup}
+                </button>
+              </>
+            )}
+            {activeTeam && (
+              <>
+                <ChevronRight size={12} />
+                <span className="text-foreground">{activeTeam.name}</span>
+              </>
+            )}
+          </nav>
+
+          <h1 className="text-3xl font-black text-foreground tracking-tight">
+            {activeTeamId ? activeTeam?.name : selectedGroup ? selectedGroup : 'Assigned Evaluations'}
+          </h1>
         </div>
 
-        {selectedGroup && !activeTeamId && (
-          <button
-            onClick={() => setSelectedGroup('')}
-            className="px-4 py-2.5 rounded-xl bg-background border border-border hover:bg-muted text-foreground font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
-          >
-            <ArrowLeft size={16} /> Back to Semesters
-          </button>
-        )}
-
-        {activeTeamId && (
-          <button
-            onClick={() => setSelectedTeamId('')}
-            className="px-4 py-2.5 rounded-xl bg-background border border-border hover:bg-muted text-foreground font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
-          >
-            <ArrowLeft size={16} /> Back to Teams
-          </button>
+        {activeTeam && (
+          <div className="flex items-center gap-2">
+            {activeTeam.repoUrl && (
+              <a
+                href={activeTeam.repoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-bold hover:border-primary/40 hover:text-primary transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <Github size={14} /> Repository <ExternalLink size={12} />
+              </a>
+            )}
+            <button
+              onClick={handleForceSync}
+              disabled={forceSyncing}
+              className="px-3.5 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-bold hover:bg-muted transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={forceSyncing ? 'animate-spin text-primary' : ''} />
+              <span>{forceSyncing ? 'Syncing...' : 'Sync Git'}</span>
+            </button>
+          </div>
         )}
       </div>
 
+      {/* Empty State: No Teams */}
       {teams.length === 0 && !loadingTeams && (
-        <div className="py-20 text-center bg-card border border-border rounded-2xl shadow-sm max-w-2xl mx-auto mt-12">
-          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6 text-muted-foreground">
-            <Users size={32} />
+        <div className="py-16 text-center bg-card border border-border rounded-2xl shadow-sm max-w-lg mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+            <UserCheck size={24} />
           </div>
-          <h3 className="text-xl font-bold text-foreground">No Teams Assigned</h3>
+          <h2 className="text-base font-bold text-foreground">No Teams Assigned Yet</h2>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+            Your department coordinator has not assigned any project teams to your account for this semester.
+          </p>
         </div>
       )}
 
+      {/* Tier 1: Semesters Grid */}
       {!activeTeamId && !selectedGroup && teams.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in slide-in-from-bottom-4 duration-500">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {Object.entries(groupedTeams).map(([groupName, groupTeams]) => (
             <div
               key={groupName}
               onClick={() => setSelectedGroup(groupName)}
-              className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group flex flex-col h-full"
+              className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
             >
-              <div className="p-3 bg-primary/10 text-primary rounded-xl w-12 h-12 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <BookOpen size={24} />
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:scale-105 transition-transform">
+                  <BookOpen size={20} />
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
+                  {groupTeams.length} {groupTeams.length === 1 ? 'Team' : 'Teams'}
+                </span>
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">{groupName}</h3>
-              <p className="text-sm text-muted-foreground mt-auto">
-                {groupTeams.length} Assigned {groupTeams.length === 1 ? 'Team' : 'Teams'}
-              </p>
+              <div>
+                <h3 className="text-base font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
+                  {groupName}
+                </h3>
+                <p className="text-xs text-muted-foreground font-medium">Click to inspect teams & milestones</p>
+              </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Tier 2: Teams in Selected Semester */}
       {!activeTeamId && selectedGroup && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-in slide-in-from-right-4 duration-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {groupedTeams[selectedGroup]?.map((team) => (
             <div
               key={team._id}
               onClick={() => setSelectedTeamId(team._id)}
-              className="group bg-card border border-border hover:border-primary/50 hover:shadow-md transition-all rounded-2xl p-6 cursor-pointer flex flex-col"
+              className="bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all rounded-2xl p-6 cursor-pointer group flex flex-col justify-between"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">{team.name}</h4>
-                <span className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-wider ${
-                  team.status === 'active'
-                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                    : team.status === 'forming'
-                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                    : 'bg-primary/10 text-primary border-primary/20'
-                }`}>
-                  {team.status}
-                </span>
-              </div>
-              
-              <div className="mt-auto">
-                <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2">Team Members</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {team.members.map(m => (
-                    <div key={m._id} className="text-xs bg-muted text-foreground px-2 py-1 rounded-md border border-border">
-                      {m.name}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                    {team.name}
+                  </h3>
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+                    team.status === 'active'
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                  }`}>
+                    {team.status}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 mb-4">
+                  {team.members.map((m) => (
+                    <div key={m._id} className="text-xs text-muted-foreground flex items-center justify-between py-0.5">
+                      <span className="font-semibold text-foreground">{m.name}</span>
+                      <span className="text-[11px]">@{m.githubUsername || 'unlinked'}</span>
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="pt-3 border-t border-border flex items-center justify-between text-xs font-bold text-primary">
+                <span>Evaluate Team</span>
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Tier 3: Active Team Evaluation Matrix & GitHub Activity */}
       {activeTeamId && (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
           
-          {/* Section 1: GitHub Activity & Contribution Panel (Sidebar on XL) */}
+          {/* GitHub Activity Sidebar (4 cols on xl) */}
           <div className="xl:col-span-4 space-y-6">
-            <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col h-full">
-              
-              <div className="p-6 border-b border-border bg-muted/20">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-sm">
-                        <Github size={16} />
-                      </div>
-                      GitHub Pipeline
-                    </h3>
-                    {activeTeam?.repoUrl && (
-                      <a
-                        href={activeTeam.repoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-primary hover:underline flex items-center gap-1 font-medium mt-2"
-                      >
-                        <ExternalLink size={12} /> {activeTeam.repoUrl}
-                      </a>
-                    )}
+            <div className="bg-card border border-border rounded-2xl shadow-sm p-6">
+              <div className="flex items-center justify-between mb-5 pb-3 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center">
+                    <Github size={16} />
                   </div>
-                  <button
-                    onClick={handleForceSync}
-                    disabled={forceSyncing}
-                    className="p-2 rounded-xl bg-background border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-sm disabled:opacity-50"
-                    title="Force Sync"
-                  >
-                    <RefreshCw size={16} className={forceSyncing ? 'animate-spin text-primary' : ''} />
-                  </button>
+                  <div>
+                    <h2 className="font-bold text-sm text-foreground">GitHub Activity</h2>
+                    <p className="text-[10px] text-muted-foreground">Individual commit audit</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-6 flex-1 bg-background">
-                <div className="space-y-4">
-                  {metrics?.students?.map((st) => (
-                    <div key={st.studentId} className="p-4 rounded-xl border border-border hover:border-primary/30 transition-colors group">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                           <div className="font-bold text-foreground text-sm">{st.name}</div>
-                           <div className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md inline-block mt-1">
-                             @{st.githubUsername || 'unlinked'}
-                           </div>
-                        </div>
-                         <span
-                          className={`font-bold px-2 py-1 rounded text-[9px] uppercase tracking-wider ${
-                            st.syncStatus === 'ok'
-                              ? 'bg-emerald-500/10 text-emerald-600'
-                              : st.syncStatus === 'rate_limited'
-                              ? 'bg-amber-500/10 text-amber-600'
-                              : 'bg-destructive/10 text-destructive'
-                          }`}
-                        >
-                          {st.syncStatus}
-                        </span>
+              <div className="space-y-3">
+                {metrics?.students?.map((st) => (
+                  <div key={st.studentId} className="p-3.5 rounded-xl bg-background border border-border space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-xs text-foreground block">{st.name}</span>
+                        <span className="text-[10px] text-muted-foreground">@{st.githubUsername || 'unlinked'}</span>
                       </div>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                        st.syncStatus === 'ok'
+                          ? 'bg-emerald-500/10 text-emerald-600'
+                          : 'bg-amber-500/10 text-amber-600'
+                      }`}>
+                        {st.syncStatus}
+                      </span>
+                    </div>
 
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="bg-muted/50 rounded-lg p-2 border border-border/50">
-                          <span className="text-[9px] text-muted-foreground block uppercase font-bold tracking-wider mb-0.5">Commits</span>
-                          <span className="text-sm font-black text-foreground">{st.commitCount}</span>
-                        </div>
-                        <div className="bg-emerald-500/5 rounded-lg p-2 border border-emerald-500/10">
-                          <span className="text-[9px] text-emerald-600/70 block uppercase font-bold tracking-wider mb-0.5">+ Lines</span>
-                          <span className="text-sm font-black text-emerald-600">+{st.linesAdded}</span>
-                        </div>
-                        <div className="bg-destructive/5 rounded-lg p-2 border border-destructive/10">
-                          <span className="text-[9px] text-destructive/70 block uppercase font-bold tracking-wider mb-0.5">- Lines</span>
-                          <span className="text-sm font-black text-destructive">-{st.linesDeleted}</span>
-                        </div>
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="bg-muted/40 rounded-lg p-1.5 border border-border/50">
+                        <span className="text-[9px] text-muted-foreground block font-bold">Commits</span>
+                        <span className="font-black text-foreground">{st.commitCount}</span>
                       </div>
-
-                      <div className="mt-3 flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
-                        <Clock size={12} />
-                        {st.lastSyncedAt
-                          ? `Synced ${Math.round((Date.now() - new Date(st.lastSyncedAt)) / 60000)}m ago`
-                          : 'Never synced'}
+                      <div className="bg-emerald-500/5 rounded-lg p-1.5 border border-emerald-500/20">
+                        <span className="text-[9px] text-emerald-600/80 block font-bold">+ Lines</span>
+                        <span className="font-black text-emerald-600">+{st.linesAdded}</span>
+                      </div>
+                      <div className="bg-destructive/5 rounded-lg p-1.5 border border-destructive/20">
+                        <span className="text-[9px] text-destructive/80 block font-bold">- Lines</span>
+                        <span className="font-black text-destructive">-{st.linesDeleted}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium pt-1">
+                      <Clock size={11} />
+                      {st.lastSyncedAt
+                        ? `Synced ${Math.round((Date.now() - new Date(st.lastSyncedAt)) / 60000)}m ago`
+                        : 'Never synced'}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Section 2: Milestone Evaluation Grid */}
+          {/* Milestone Evaluation Matrix (8 cols on xl) */}
           <div className="xl:col-span-8">
-            <div className="bg-card border border-border rounded-2xl shadow-sm h-full flex flex-col">
-              <div className="p-6 md:p-8 border-b border-border">
-                <h3 className="text-xl font-bold text-foreground flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                    <Code2 size={20} />
+            <div className="bg-card border border-border rounded-2xl shadow-sm p-6 md:p-8">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                    <Award size={18} />
                   </div>
-                  Evaluation Matrix
-                </h3>
+                  <div>
+                    <h2 className="text-lg font-black text-foreground">Milestone Evaluation Matrix</h2>
+                    <p className="text-xs text-muted-foreground">Click any milestone cell to grade or provide feedback</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-6 overflow-x-auto flex-1 scrollbar-hide">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
-                    <tr className="border-b-2 border-border text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      <th className="pb-3 px-4 font-bold text-left">Student</th>
+                    <tr className="border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      <th className="pb-3 px-3 text-left">Student</th>
                       {(summaryData?.students?.[0]?.scores || []).map((scoreItem) => (
-                        <th key={scoreItem.order || scoreItem.milestoneId?._id} className="pb-3 px-2 text-center w-20">
+                        <th key={scoreItem.order || scoreItem.milestoneId?._id} className="pb-3 px-2 text-center w-16">
                           M{scoreItem.order}
                         </th>
                       ))}
-                      <th className="pb-3 px-4 text-right w-32">Total Score</th>
+                      <th className="pb-3 px-3 text-right w-28">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {summaryData?.students?.map((row) => (
-                      <tr key={row.student._id} className="hover:bg-muted/30 transition-colors group">
-                        <td className="py-4 px-4">
-                          <div className="font-bold text-sm text-foreground">{row.student.name}</div>
-                          <div className="text-[11px] font-medium text-muted-foreground mt-0.5">@{row.student.githubUsername}</div>
+                      <tr key={row.student._id} className="hover:bg-muted/20 transition-colors">
+                        <td className="py-3.5 px-3">
+                          <span className="font-bold text-sm text-foreground block">{row.student.name}</span>
+                          <span className="text-[11px] text-muted-foreground">@{row.student.githubUsername || 'unlinked'}</span>
                         </td>
 
                         {(row.scores || []).map((scoreObj) => {
@@ -296,37 +318,37 @@ export const TeacherDashboard = () => {
                           const isOrphaned = scoreObj && scoreObj.isOrphaned;
 
                           return (
-                            <td key={scoreObj.order || scoreObj.milestoneId?._id} className="py-4 px-2 text-center">
+                            <td key={scoreObj.order || scoreObj.milestoneId?._id} className="py-3.5 px-2 text-center">
                               <button
                                 onClick={() => openGradeModal(row.student, scoreObj)}
-                                className={`w-14 h-14 rounded-xl font-bold text-sm flex flex-col items-center justify-center mx-auto border-2 transition-all duration-200 ${
+                                className={`w-12 h-12 rounded-xl font-bold text-xs flex flex-col items-center justify-center mx-auto border transition-all ${
                                   isOrphaned
                                     ? 'bg-destructive/10 text-destructive border-destructive/20 opacity-60'
                                     : isGraded
-                                    ? 'bg-primary border-primary text-primary-foreground shadow-soft hover:-translate-y-0.5'
-                                    : 'bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                                    ? 'bg-primary text-primary-foreground border-primary shadow-sm hover:scale-105'
+                                    : 'bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
                                 }`}
-                                title={isOrphaned ? 'Orphaned milestone grade (template deleted)' : ''}
+                                title={isOrphaned ? 'Orphaned milestone template' : ''}
                               >
-                                <div className="flex flex-col items-center gap-0.5">
-                                  <span className="leading-none mt-1">{isGraded ? scoreObj.score : '-'}</span>
-                                  {scoreObj.requiresExternalReview && (
-                                    <span className={`text-[8px] px-1 rounded-sm uppercase tracking-wider font-extrabold ${scoreObj.externalStatus === 'graded' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'}`}>
-                                      {scoreObj.externalStatus === 'graded' ? scoreObj.externalScore : 'EXT'}
-                                    </span>
-                                  )}
-                                </div>
+                                <span className="leading-none">{isGraded ? scoreObj.score : '+'}</span>
+                                {scoreObj.requiresExternalReview && (
+                                  <span className={`text-[7px] font-black px-1 rounded uppercase tracking-wider mt-1 ${
+                                    scoreObj.externalStatus === 'graded' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'
+                                  }`}>
+                                    {scoreObj.externalStatus === 'graded' ? scoreObj.externalScore : 'EXT'}
+                                  </span>
+                                )}
                               </button>
                             </td>
                           );
                         })}
 
-                        <td className="py-4 px-4 text-right">
-                          <div className="font-black text-emerald-600 text-lg">
-                            {row.progressSummary?.totalScore || 0} <span className="text-xs font-semibold text-emerald-600/70">pts</span>
+                        <td className="py-3.5 px-3 text-right">
+                          <div className="font-black text-foreground text-base">
+                            {row.progressSummary?.totalScore || 0} <span className="text-xs text-muted-foreground font-semibold">pts</span>
                           </div>
-                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
-                            {row.progressSummary?.percentComplete}% done
+                          <div className="text-[10px] text-muted-foreground font-bold">
+                            {row.progressSummary?.percentComplete}% completed
                           </div>
                         </td>
                       </tr>
@@ -339,7 +361,7 @@ export const TeacherDashboard = () => {
         </div>
       )}
 
-      {/* Inline Grade Modal */}
+      {/* Grade Modal */}
       <GradeModal />
     </div>
   );
