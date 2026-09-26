@@ -3,9 +3,7 @@ import { Shield, BookOpen, UserCheck, BarChart3, History } from 'lucide-react';
 
 const TABS = [
   { id: 'batches', label: 'Batches', icon: BookOpen },
-  { id: 'users', label: 'Faculty & Users', icon: UserCheck },
-  { id: 'reports', label: 'Analytics & Workload', icon: BarChart3 },
-  { id: 'logs', label: 'Audit Log Trail', icon: History }
+  { id: 'users', label: 'Faculty & Users', icon: UserCheck }
 ];
 
 export const AdminSidebar = ({ activeTab, setActiveTab, setSelectedBatchId }) => {

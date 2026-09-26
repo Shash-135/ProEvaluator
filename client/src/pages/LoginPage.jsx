@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/useAuthStore';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import api from '../api/client';
 import { Lock, Mail, Github, LogIn, User, ArrowRight } from 'lucide-react';
 
@@ -18,6 +18,17 @@ export const LoginPage = () => {
 
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const err = params.get('error');
+    if (err === 'auth_failed') {
+      setError('Authentication failed. Please check your account permissions.');
+    } else if (err === 'no_user') {
+      setError('Login canceled or no user data returned by the provider.');
+    }
+  }, [location.search]);
 
   const { data: cohortsData } = useQuery({
     queryKey: ['public-cohorts'],

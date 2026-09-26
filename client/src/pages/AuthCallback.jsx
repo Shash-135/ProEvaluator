@@ -7,15 +7,19 @@ export const AuthCallback = () => {
   const navigate = useNavigate();
   const { fetchMe } = useAuthStore();
 
+  const hasAttempted = React.useRef(false);
+
   useEffect(() => {
+    if (hasAttempted.current) return;
+    hasAttempted.current = true;
+
     const token = searchParams.get('token');
+    
     if (token) {
       localStorage.setItem('token', token);
       fetchMe().then(() => {
         navigate('/', { replace: true });
       });
-    } else {
-      navigate('/login', { replace: true });
     }
   }, [searchParams, navigate, fetchMe]);
 

@@ -16,10 +16,36 @@ router.post('/complete-profile', authenticate, authController.completeProfile);
 
 // Google OAuth
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/login', session: false }), authController.oauthCallback);
+router.get('/google/callback', (req, res, next) => {
+  passport.authenticate('google', { session: false }, (err, user, info) => {
+    if (err) {
+      console.error("Google Auth Error:", err);
+      return res.redirect('/login?error=auth_failed');
+    }
+    if (!user) {
+      console.error("Google Auth Failed - No User:", info);
+      return res.redirect('/login?error=no_user');
+    }
+    req.user = user;
+    next();
+  })(req, res, next);
+}, authController.oauthCallback);
 
 // GitHub OAuth
 router.get('/github', passport.authenticate('github', { scope: ['user:email', 'repo'] }));
-router.get('/github/callback', passport.authenticate('github', { failureRedirect: '/login', session: false }), authController.oauthCallback);
+router.get('/github/callback', (req, res, next) => {
+  passport.authenticate('github', { session: false }, (err, user, info) => {
+    if (err) {
+      console.error("GitHub Auth Error:", err);
+      return res.redirect('/login?error=auth_failed');
+    }
+    if (!user) {
+      console.error("GitHub Auth Failed - No User:", info);
+      return res.redirect('/login?error=no_user');
+    }
+    req.user = user;
+    next();
+  })(req, res, next);
+}, authController.oauthCallback);
 
 module.exports = router;

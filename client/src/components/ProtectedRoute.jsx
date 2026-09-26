@@ -14,6 +14,7 @@ export const ProtectedRoute = ({ allowedRoles }) => {
   }
 
   if (!user) {
+    console.log("ProtectedRoute: No user found, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 

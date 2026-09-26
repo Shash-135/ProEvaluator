@@ -4,8 +4,7 @@ import api from '../api/client';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
 import { BatchesTab } from '../components/admin/tabs/BatchesTab';
 import { UsersTab } from '../components/admin/tabs/UsersTab';
-import { ReportsTab } from '../components/admin/tabs/ReportsTab';
-import { LogsTab } from '../components/admin/tabs/LogsTab';
+
 import { BatchModal } from '../components/admin/modals/BatchModal';
 import { MilestoneModal } from '../components/admin/modals/MilestoneModal';
 import { MoveMemberModal } from '../components/admin/modals/MoveMemberModal';
@@ -77,8 +76,7 @@ export const AdminDashboard = () => {
           )}
 
           {activeTab === 'users' && <UsersTab setShowAddUserModal={setShowAddUserModal} />}
-          {activeTab === 'reports' && <ReportsTab cohortsData={cohortsData} selectedCohortId={selectedCohortId} setSelectedCohortId={setSelectedCohortId} />}
-          {activeTab === 'logs' && <LogsTab />}
+
         </div>
       </div>
 

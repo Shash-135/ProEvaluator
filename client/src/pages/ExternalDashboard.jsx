@@ -49,9 +49,6 @@ export const ExternalDashboard = () => {
           <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
             {activeTeamId ? `Evaluating: ${teams.find(t => t._id === activeTeamId)?.name}` : selectedGroup ? `Teams in ${selectedGroup}` : 'Team Evaluation Mirror'}
           </h2>
-          <p className="text-muted-foreground mt-1">
-            {activeTeamId ? 'Review GitHub contributions and provide independent external grades.' : selectedGroup ? 'Select a team to evaluate.' : 'Select a semester block to view assigned teams.'}
-          </p>
         </div>
 
         {selectedGroup && !activeTeamId && (
@@ -78,10 +75,7 @@ export const ExternalDashboard = () => {
            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6 text-muted-foreground">
             <Eye size={32} />
           </div>
-          <h3 className="text-xl font-bold text-foreground mb-2">No Linked Teams Found</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            You are not currently paired with any internal teachers or teams.
-          </p>
+          <h3 className="text-xl font-bold text-foreground">No Linked Teams Found</h3>
         </div>
       )}
 

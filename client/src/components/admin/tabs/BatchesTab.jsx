@@ -101,8 +101,7 @@ export const BatchesTab = ({
                   {c.isActive ? 'ACTIVE' : 'INACTIVE'}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-1">{c.name}</h3>
-              <p className="text-sm text-muted-foreground font-medium mb-6">Manage Semesters & Teams</p>
+              <h3 className="text-lg font-bold text-foreground mb-4">{c.name}</h3>
               
               <div className="mt-auto pt-4 border-t border-border flex items-center justify-end">
                  <div className="text-primary text-xs font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
@@ -184,10 +183,7 @@ export const BatchesTab = ({
               <h3 className="text-lg font-bold text-foreground mb-1">{b.name}</h3>
               <p className="text-sm text-muted-foreground font-medium mb-6">Team Size: {b.minTeamSize}-{b.maxTeamSize}</p>
               
-              <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
-                 <div className="text-xs font-semibold text-muted-foreground">
-                   Manage Milestones & Teams
-                 </div>
+              <div className="mt-auto pt-4 border-t border-border flex items-center justify-end">
                  <div className="text-primary text-xs font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
                    Manage <MoveRight size={14} />
                  </div>

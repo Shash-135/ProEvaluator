@@ -80,11 +80,8 @@ export const TeacherDashboard = () => {
             <LayoutDashboard size={14} /> Faculty Evaluation Portal
           </div>
           <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
-            {activeTeamId ? `Evaluating: ${activeTeam?.name}` : selectedGroup ? `Teams in ${selectedGroup}` : 'Project Milestone Evaluation'}
+            {activeTeamId ? activeTeam?.name : selectedGroup ? selectedGroup : 'Milestone Evaluation'}
           </h2>
-          <p className="text-muted-foreground mt-1">
-            {activeTeamId ? 'Review student contributions and grade project milestones.' : selectedGroup ? 'Select a team to evaluate.' : 'Select a semester block to view assigned teams.'}
-          </p>
         </div>
 
         {selectedGroup && !activeTeamId && (
@@ -111,10 +108,7 @@ export const TeacherDashboard = () => {
           <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6 text-muted-foreground">
             <Users size={32} />
           </div>
-          <h3 className="text-xl font-bold text-foreground mb-2">No Teams Assigned Yet</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            You do not currently have any student teams assigned to you. An administrator will allocate teams shortly.
-          </p>
+          <h3 className="text-xl font-bold text-foreground">No Teams Assigned</h3>
         </div>
       )}
 
@@ -274,9 +268,6 @@ export const TeacherDashboard = () => {
                   </div>
                   Evaluation Matrix
                 </h3>
-                <p className="text-sm text-muted-foreground mt-2 pl-13">
-                  Click any milestone cell to evaluate the student's score and provide feedback.
-                </p>
               </div>
 
               <div className="p-6 overflow-x-auto flex-1 scrollbar-hide">

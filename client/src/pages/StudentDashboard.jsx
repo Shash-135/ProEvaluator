@@ -237,8 +237,7 @@ export const StudentDashboard = () => {
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
                    <Users size={24} />
                 </div>
-                <p className="text-sm font-medium text-foreground mb-1">No Team Assigned</p>
-                <p className="text-xs text-muted-foreground mb-6">Create a team by inviting a classmate.</p>
+                <p className="text-sm font-bold text-foreground mb-6">No Team Assigned</p>
                 
                 <div className="space-y-3 text-left bg-muted/30 p-4 rounded-xl border border-border">
                   <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Invite Classmate</label>
@@ -340,9 +339,6 @@ export const StudentDashboard = () => {
                 </div>
               <div>
                 <h3 className="text-xl font-bold text-foreground tracking-tight">Milestone Tracker</h3>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Sequential progress and faculty evaluations
-                </p>
               </div>
             </div>
 
