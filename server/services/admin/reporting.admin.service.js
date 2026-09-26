@@ -8,6 +8,26 @@ const AdminActionLog = require('../../models/AdminActionLog');
 const { ROLES, JOIN_REQUEST_STATUS } = require('../../constants');
 
 class ReportingAdminService {
+  async getExecutiveStats() {
+    const totalBatches = await Batch.countDocuments();
+    const totalStudents = await User.countDocuments({ role: ROLES.STUDENT });
+    const totalFaculty = await User.countDocuments({ role: { $in: [ROLES.TEACHER, ROLES.EXTERNAL] } });
+    const totalTeams = await Team.countDocuments();
+    const assignedTeams = await Team.countDocuments({
+      assignedTeacherId: { $ne: null, $exists: true }
+    });
+    const coveragePercent = totalTeams > 0 ? Math.round((assignedTeams / totalTeams) * 100) : 0;
+
+    return {
+      totalBatches,
+      totalStudents,
+      totalFaculty,
+      totalTeams,
+      assignedTeams,
+      coveragePercent
+    };
+  }
+
   async getBatchAnalytics(batchId) {
     const batch = await Batch.findById(batchId);
     if (!batch) throw new Error('Batch not found.');

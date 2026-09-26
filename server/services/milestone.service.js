@@ -139,7 +139,7 @@ class MilestoneService {
     // Aggregate student milestone scores for all team members
     const scoresDocs = await StudentMilestoneScore.find({
       studentId: { $in: studentIds }
-    }).populate('scores.milestoneId', 'title order maxScore dueDate');
+    }).populate('scores.milestoneId', 'title order maxScore rubric dueDate requiresDeliverable deliverableInstructions requiresExternalReview');
 
     const scoreMap = new Map();
     scoresDocs.forEach((doc) => scoreMap.set(doc.studentId.toString(), doc));

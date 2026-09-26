@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Award, CheckCircle2, AlertCircle, Users, MessageSquare } from 'lucide-react';
+import { X, Award, CheckCircle2, AlertCircle, Users, MessageSquare, BookOpen, ExternalLink, Clock } from 'lucide-react';
 import api from '../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -122,6 +122,62 @@ export const BatchGradeModal = ({ isOpen, onClose, team, summaryData }) => {
                 ))}
               </select>
             </div>
+
+            {activeMilestone && (
+              <div className="space-y-3">
+                {activeMilestone?.milestoneId?.rubric && (
+                  <div className="p-3.5 rounded-xl bg-muted/30 border border-border space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                      <BookOpen size={13} className="text-primary" />
+                      <span>Grading Rubric</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground whitespace-pre-line leading-relaxed">
+                      {activeMilestone.milestoneId.rubric}
+                    </p>
+                  </div>
+                )}
+
+                {(() => {
+                  const studentDeliverables = (summaryData?.students || [])
+                    .map((s) => {
+                      const scoreItem = (s.scores || []).find(
+                        (sc) => String(sc.order) === String(selectedMilestoneOrder)
+                      );
+                      return {
+                        name: s.student.name,
+                        deliverableUrl: scoreItem?.deliverableUrl,
+                        submittedAt: scoreItem?.submittedAt
+                      };
+                    })
+                    .filter((d) => d.deliverableUrl);
+
+                  if (studentDeliverables.length === 0) return null;
+
+                  return (
+                    <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-1.5">
+                      <span className="text-[10px] font-bold text-foreground uppercase tracking-wider block">
+                        Team Member Deliverables ({studentDeliverables.length})
+                      </span>
+                      <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                        {studentDeliverables.map((sd, i) => (
+                          <div key={i} className="flex items-center justify-between text-[11px] bg-background/80 px-2.5 py-1.5 rounded-lg border border-border">
+                            <span className="font-semibold text-foreground truncate max-w-[140px]">{sd.name}</span>
+                            <a
+                              href={sd.deliverableUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary hover:underline font-bold flex items-center gap-1 shrink-0"
+                            >
+                              Inspect Work <ExternalLink size={10} />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             <div>
               <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">

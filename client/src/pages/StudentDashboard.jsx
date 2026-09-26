@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  Link2
+  Link2,
+  Calendar,
+  ChevronRight
 } from 'lucide-react';
 import { ContributionBreakdown } from '../components/ContributionBreakdown';
 
@@ -141,6 +143,49 @@ export const StudentDashboard = () => {
   const minTeamSize = currentBatch?.minTeamSize;
   const maxTeamSize = currentBatch?.maxTeamSize;
   const memberCount = team?.members?.length || 0;
+
+  const getMilestoneDeadlineInfo = (dueDate) => {
+    if (!dueDate) return null;
+    const due = new Date(dueDate);
+    const now = new Date();
+    const diffMs = due.getTime() - now.getTime();
+    const isPast = diffMs < 0;
+    const diffDays = Math.ceil(Math.abs(diffMs) / (1000 * 60 * 60 * 24));
+
+    if (isPast) {
+      return {
+        label: `Overdue (${diffDays}d ago)`,
+        badgeClass: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
+        dateText: due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        isOverdue: true
+      };
+    }
+
+    if (diffDays === 0) {
+      return {
+        label: 'Due Today',
+        badgeClass: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+        dateText: due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        isOverdue: false
+      };
+    }
+
+    if (diffDays <= 3) {
+      return {
+        label: `Due in ${diffDays} day${diffDays > 1 ? 's' : ''}`,
+        badgeClass: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+        dateText: due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        isOverdue: false
+      };
+    }
+
+    return {
+      label: `Due in ${diffDays} days`,
+      badgeClass: 'bg-primary/10 text-primary border-primary/20',
+      dateText: due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+      isOverdue: false
+    };
+  };
 
   return (
     <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
@@ -450,6 +495,65 @@ export const StudentDashboard = () => {
               )}
             </div>
 
+            {/* Interactive Progress Stepper */}
+            {studentScore?.scores && studentScore.scores.length > 0 && (
+              <div className="mb-8 p-4 rounded-2xl bg-muted/20 border border-border">
+                <div className="flex items-center justify-between overflow-x-auto pb-1 gap-2 scrollbar-none">
+                  {studentScore.scores.map((sc, idx) => {
+                    const mInfo = sc.milestoneId || {};
+                    const isDone = sc.status === 'graded';
+                    const firstUngradedIndex = studentScore.scores.findIndex((s) => s.status !== 'graded');
+                    const isCurrent = idx === firstUngradedIndex;
+
+                    return (
+                      <div
+                        key={sc.order}
+                        onClick={() => {
+                          const el = document.getElementById(`milestone-card-${sc.order}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        className={`flex items-center gap-2 cursor-pointer transition-all shrink-0 p-2 rounded-xl group ${
+                          isCurrent
+                            ? 'bg-primary/10 border border-primary/30 ring-2 ring-primary/20'
+                            : isDone
+                            ? 'bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20'
+                            : 'opacity-70 hover:opacity-100 hover:bg-muted/40 border border-transparent'
+                        }`}
+                      >
+                        {/* Step Circle */}
+                        <div
+                          className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-transform group-hover:scale-105 ${
+                            isDone
+                              ? 'bg-emerald-500 text-white'
+                              : isCurrent
+                              ? 'bg-primary text-primary-foreground animate-pulse'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {isDone ? <Check size={14} strokeWidth={3} /> : sc.order}
+                        </div>
+
+                        {/* Step Details */}
+                        <div className="text-left pr-1">
+                          <span className="block text-[11px] font-bold text-foreground truncate max-w-[100px]">
+                            {mInfo.title || `Milestone ${sc.order}`}
+                          </span>
+                          <span className="block text-[10px] text-muted-foreground font-medium">
+                            {isDone ? `${sc.score}/${sc.maxScore} pts` : isCurrent ? 'In Progress' : 'Upcoming'}
+                          </span>
+                        </div>
+
+                        {/* Connector Chevron between steps */}
+                        {idx < studentScore.scores.length - 1 && (
+                          <ChevronRight size={14} className="text-muted-foreground/40 shrink-0 ml-1" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {(!studentScore?.scores || studentScore.scores.length === 0) ? (
               <div className="py-12 text-center text-muted-foreground bg-muted/20 border border-border rounded-xl">
                 <Sparkles size={24} className="mx-auto mb-2 text-muted-foreground/60" />
@@ -463,7 +567,7 @@ export const StudentDashboard = () => {
                   const isGraded = item.status === 'graded';
 
                   return (
-                    <div key={item.order} className="relative pl-7">
+                    <div key={item.order} id={`milestone-card-${item.order}`} className="relative pl-7 scroll-mt-24">
                       {/* Node Bullet */}
                       <div className={`absolute -left-[15px] top-1 w-7 h-7 rounded-full border-4 border-card flex items-center justify-center text-[10px] font-black shadow-sm ${
                         isGraded ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
@@ -503,12 +607,25 @@ export const StudentDashboard = () => {
                                 <span className="font-semibold text-foreground">Deliverable:</span> {mObj.deliverableInstructions}
                               </p>
                             )}
-                            {mObj.dueDate && (
-                              <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mt-1.5">
-                                <Clock size={12} />
-                                Due {new Date(mObj.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                              </div>
-                            )}
+                            {mObj.dueDate && (() => {
+                              const dl = getMilestoneDeadlineInfo(mObj.dueDate);
+                              if (!dl) return null;
+                              return (
+                                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                    isGraded ? 'bg-muted text-muted-foreground border-border' : dl.badgeClass
+                                  }`}>
+                                    <Clock size={11} />
+                                    {isGraded ? `Due ${dl.dateText}` : dl.label}
+                                  </span>
+                                  {!isGraded && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Due {dl.dateText}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           <div className="shrink-0">
@@ -556,10 +673,10 @@ export const StudentDashboard = () => {
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-between text-xs">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                               {item.deliverableUrl ? (
-                                <div className="flex items-center gap-2">
-                                  <Link2 size={13} className="text-primary" />
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Link2 size={13} className="text-primary shrink-0" />
                                   <span className="text-[11px] font-bold text-muted-foreground">Deliverable:</span>
                                   <a
                                     href={item.deliverableUrl}
@@ -569,6 +686,21 @@ export const StudentDashboard = () => {
                                   >
                                     {item.deliverableUrl.replace(/^https?:\/\//, '')} <ExternalLink size={11} />
                                   </a>
+                                  {item.submittedAt && mObj.dueDate && (() => {
+                                    const isLate = new Date(item.submittedAt) > new Date(mObj.dueDate);
+                                    if (isLate) {
+                                      return (
+                                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                                          Late Submission
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                        Submitted On-Time
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                               ) : (
                                 <span className="text-[11px] text-muted-foreground italic">No deliverable link attached</span>
@@ -579,9 +711,9 @@ export const StudentDashboard = () => {
                                   setEditingDeliverableMilestoneId(mObj._id || item.milestoneId?._id || item.milestoneId);
                                   setDeliverableInput(item.deliverableUrl || '');
                                 }}
-                                className={`text-[11px] font-bold transition-all ${
+                                className={`text-[11px] font-bold transition-all shrink-0 ${
                                   !item.deliverableUrl && mObj.requiresDeliverable
-                                    ? 'bg-primary text-primary-foreground px-2.5 py-1 rounded-lg hover:bg-primary/90 shadow-sm'
+                                    ? 'bg-primary text-primary-foreground px-2.5 py-1.5 rounded-xl hover:bg-primary/90 shadow-sm'
                                     : 'text-primary hover:underline'
                                 }`}
                               >

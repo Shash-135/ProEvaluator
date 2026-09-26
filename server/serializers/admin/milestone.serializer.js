@@ -9,6 +9,9 @@ const serializeMilestone = (milestone) => {
     title: doc.title,
     maxScore: doc.maxScore,
     rubric: doc.rubric || '',
+    requiresDeliverable: !!doc.requiresDeliverable,
+    deliverableInstructions: doc.deliverableInstructions || '',
+    requiresExternalReview: !!doc.requiresExternalReview,
     dueDate: doc.dueDate || null,
     createdAt: doc.createdAt
   };
