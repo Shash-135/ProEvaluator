@@ -346,7 +346,7 @@ export const BatchesTab = ({
               {teamsData?.teams?.map((team) => (
                 <div key={team.id || team._id} className="p-4 rounded-xl bg-background border border-border flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-colors hover:border-border/80">
                   <div>
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <h4 className="font-bold text-foreground text-sm">{team.name}</h4>
                       <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-wider ${
                         team.status === 'active'
@@ -357,6 +357,22 @@ export const BatchesTab = ({
                       }`}>
                         {team.status}
                       </span>
+
+                      {activeBatch?.minTeamSize && team.members.length < activeBatch.minTeamSize && (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                          {team.members.length}/{activeBatch.minTeamSize} Min Members
+                        </span>
+                      )}
+
+                      {!team.assignedTeacherId ? (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                          Needs Evaluator
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-semibold text-muted-foreground">
+                          Evaluator: {team.assignedTeacherId?.name || 'Assigned'}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
