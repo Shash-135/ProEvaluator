@@ -14,7 +14,8 @@ import {
   MessageSquare,
   Sparkles,
   GitBranch,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { ContributionBreakdown } from '../components/ContributionBreakdown';
 
@@ -116,6 +117,11 @@ export const StudentDashboard = () => {
   const completedMilestones = studentScore?.scores?.filter(s => s.status === 'graded').length || 0;
   const totalMilestones = studentScore?.scores?.length || 0;
 
+  const currentBatch = batchesData?.batches?.find((b) => (b._id || b.id) === selectedBatchId);
+  const minTeamSize = currentBatch?.minTeamSize;
+  const maxTeamSize = currentBatch?.maxTeamSize;
+  const memberCount = team?.members?.length || 0;
+
   return (
     <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
       
@@ -201,7 +207,7 @@ export const StudentDashboard = () => {
             </div>
 
             {team ? (
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-muted/30 border border-border flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Team Name</span>
@@ -214,6 +220,34 @@ export const StudentDashboard = () => {
                     </span>
                   </div>
                 </div>
+
+                {/* Team Size & Evaluator Compliance Alerts */}
+                {minTeamSize && memberCount < minTeamSize && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-800">
+                    <AlertCircle size={15} className="shrink-0 mt-0.5 text-amber-600" />
+                    <div>
+                      <span className="font-bold block">Capacity Requirement</span>
+                      <span>Needs {minTeamSize - memberCount} more member(s) to meet the semester requirement ({minTeamSize}–{maxTeamSize} students).</span>
+                    </div>
+                  </div>
+                )}
+
+                {maxTeamSize && memberCount > maxTeamSize && (
+                  <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2.5 text-xs text-destructive">
+                    <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold block">Size Exceeded</span>
+                      <span>Team exceeds the maximum batch limit of {maxTeamSize} members.</span>
+                    </div>
+                  </div>
+                )}
+
+                {!team.assignedTeacherId && (
+                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2 text-xs text-blue-700">
+                    <Clock size={14} className="shrink-0 text-blue-600" />
+                    <span>Faculty evaluator assignment pending by department admin.</span>
+                  </div>
+                )}
 
                 <div>
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5">Members ({team.members.length})</div>
