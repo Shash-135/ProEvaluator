@@ -132,6 +132,14 @@ class TeamFormationService {
     }
     await targetTeam.save(opts);
 
+    // Ensure downstream milestone scores reflect new teamId
+    const StudentMilestoneScore = require('../models/StudentMilestoneScore');
+    await StudentMilestoneScore.updateMany(
+      { studentId: { $in: targetTeam.members }, batchId: request.batchId },
+      { $set: { teamId: targetTeam._id } },
+      opts
+    );
+
     // Update request status
     request.status = JOIN_REQUEST_STATUS.ACCEPTED;
     await request.save(opts);

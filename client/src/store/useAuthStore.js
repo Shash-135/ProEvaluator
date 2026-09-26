@@ -13,6 +13,10 @@ export const useAuthStore = create((set, get) => ({
 
   fetchMe: async () => {
     const token = localStorage.getItem('token');
+    
+    // Artificial delay to show off the intro animation (remove in production)
+    await new Promise(resolve => setTimeout(resolve, 2500));
+
     if (!token) {
       set({ user: null, loading: false });
       return;

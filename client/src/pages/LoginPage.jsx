@@ -73,9 +73,7 @@ export const LoginPage = () => {
         </div>
         
         <div className="relative z-10 flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-black text-2xl shadow-float">
-            PE
-          </div>
+          <img src="/logo.svg" alt="ProEvaluator Logo" className="w-12 h-12 rounded-xl" />
           <span className="font-bold text-2xl tracking-tight">ProEvaluator</span>
         </div>
 
@@ -99,9 +97,7 @@ export const LoginPage = () => {
           
           {/* Mobile Logo */}
           <div className="md:hidden flex flex-col items-center mb-2">
-             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-black text-lg mb-2 shadow-soft">
-              PE
-            </div>
+             <img src="/logo.svg" alt="ProEvaluator Logo" className="w-10 h-10 rounded-xl mb-2" />
             <h2 className="text-xl font-bold text-foreground">ProEvaluator</h2>
           </div>
 

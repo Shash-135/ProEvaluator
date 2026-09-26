@@ -104,7 +104,44 @@ class MilestoneAdminService {
     const activeMap = new Map();
     activeMilestones.forEach((m) => activeMap.set(m._id.toString(), m));
 
-    const studentScoreDocs = await StudentMilestoneScore.find({ batchId });
+    // 0. Ensure all students in Teams for this batch have a StudentMilestoneScore document
+    const Team = require('../../models/Team');
+    const teamsInBatch = await Team.find({ batchId });
+    
+    let studentScoreDocs = await StudentMilestoneScore.find({ batchId });
+    const existingStudentIds = new Set(studentScoreDocs.map(d => d.studentId.toString()));
+
+    const docsToCreate = [];
+    teamsInBatch.forEach(team => {
+      team.members.forEach(memberId => {
+        if (!existingStudentIds.has(memberId.toString())) {
+          docsToCreate.push({
+            studentId: memberId,
+            teamId: team._id,
+            batchId: batchId,
+            scores: []
+          });
+        }
+      });
+    });
+
+    if (docsToCreate.length > 0) {
+      await StudentMilestoneScore.insertMany(docsToCreate);
+      studentScoreDocs = await StudentMilestoneScore.find({ batchId }); // Refresh
+    }
+
+    // Fix existing docs missing teamIds
+    for (const team of teamsInBatch) {
+      if (team.members && team.members.length > 0) {
+        await StudentMilestoneScore.updateMany(
+          { studentId: { $in: team.members }, batchId: batchId },
+          { $set: { teamId: team._id } }
+        );
+      }
+    }
+    // Refresh docs to reflect teamId updates
+    studentScoreDocs = await StudentMilestoneScore.find({ batchId });
+
     let updatedCount = 0;
 
     for (const doc of studentScoreDocs) {

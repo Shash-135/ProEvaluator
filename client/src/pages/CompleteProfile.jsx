@@ -73,9 +73,7 @@ export const CompleteProfile = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center text-white shadow-md">
-              <BookOpen size={24} />
-            </div>
+            <img src="/logo.svg" alt="ProEvaluator Logo" className="w-12 h-12 rounded-xl shadow-md" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">
             Complete Your Profile

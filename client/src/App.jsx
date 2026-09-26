@@ -94,6 +94,8 @@ const AppLayout = () => {
   );
 };
 
+import { IntroLoader } from './components/IntroLoader';
+
 export function App() {
   const { fetchMe, loading } = useAuthStore();
 
@@ -102,14 +104,7 @@ export function App() {
   }, [fetchMe]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-600">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-xs font-semibold text-slate-500">Loading ProEvaluator...</p>
-        </div>
-      </div>
-    );
+    return <IntroLoader />;
   }
 
   return (
