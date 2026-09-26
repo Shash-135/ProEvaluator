@@ -39,3 +39,22 @@ exports.updateGithubUsername = async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 };
+
+exports.updateUser = async (req, res) => {
+  try {
+    const user = await userAdminService.updateUser(req.params.id, req.body, req.user._id);
+    return res.json({ message: 'User updated successfully', user: serializeUser(user) });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const result = await userAdminService.deleteUser(req.params.id, req.user._id);
+    return res.json({ message: 'User deleted successfully', result });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+

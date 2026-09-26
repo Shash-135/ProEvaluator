@@ -1,29 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
 
-export const BatchModal = ({ setShowBatchModal, activeCohortId }) => {
+export const BatchModal = ({ setShowBatchModal, activeCohortId, editingBatch = null, setEditingBatch = () => {} }) => {
   const queryClient = useQueryClient();
-  const [batchName, setBatchName] = useState('');
-  const [minTeamSize, setMinTeamSize] = useState(2);
-  const [maxTeamSize, setMaxTeamSize] = useState(4);
+  const [batchName, setBatchName] = useState(editingBatch?.name || '');
+  const [minTeamSize, setMinTeamSize] = useState(editingBatch?.minTeamSize ?? 2);
+  const [maxTeamSize, setMaxTeamSize] = useState(editingBatch?.maxTeamSize ?? 4);
 
-  const createBatchMutation = useMutation({
-    mutationFn: async (payload) => (await api.post('/admin/batches', payload)).data,
+  useEffect(() => {
+    if (editingBatch) {
+      setBatchName(editingBatch.name || '');
+      setMinTeamSize(editingBatch.minTeamSize ?? 2);
+      setMaxTeamSize(editingBatch.maxTeamSize ?? 4);
+    }
+  }, [editingBatch]);
+
+  const saveBatchMutation = useMutation({
+    mutationFn: async (payload) => {
+      if (editingBatch) {
+        return (await api.patch(`/admin/batches/${editingBatch.id || editingBatch._id}`, payload)).data;
+      }
+      return (await api.post('/admin/batches', payload)).data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-batches'] });
       setShowBatchModal(false);
+      setEditingBatch(null);
     }
   });
+
+  const handleClose = () => {
+    setShowBatchModal(false);
+    setEditingBatch(null);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in zoom-in-95 duration-200">
-        <h3 className="text-lg font-bold text-foreground mb-4">Create New Academic Batch</h3>
+        <h3 className="text-lg font-bold text-foreground mb-4">
+          {editingBatch ? 'Edit Semester / Batch' : 'Create New Academic Batch'}
+        </h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            createBatchMutation.mutate({ name: batchName, cohortId: activeCohortId, minTeamSize, maxTeamSize });
+            const payload = {
+              name: batchName,
+              minTeamSize,
+              maxTeamSize
+            };
+            if (!editingBatch) {
+              payload.cohortId = activeCohortId;
+            }
+            saveBatchMutation.mutate(payload);
           }}
           className="space-y-4"
         >
@@ -38,7 +67,6 @@ export const BatchModal = ({ setShowBatchModal, activeCohortId }) => {
               placeholder="e.g. Semester 1"
             />
           </div>
-
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -66,13 +94,17 @@ export const BatchModal = ({ setShowBatchModal, activeCohortId }) => {
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
             <button
               type="button"
-              onClick={() => setShowBatchModal(false)}
+              onClick={handleClose}
               className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors"
             >
               Cancel
             </button>
-            <button type="submit" className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors">
-              Create Batch
+            <button
+              type="submit"
+              disabled={saveBatchMutation.isPending}
+              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50"
+            >
+              {saveBatchMutation.isPending ? 'Saving...' : editingBatch ? 'Save Changes' : 'Create Batch'}
             </button>
           </div>
         </form>
@@ -80,3 +112,4 @@ export const BatchModal = ({ setShowBatchModal, activeCohortId }) => {
     </div>
   );
 };
+

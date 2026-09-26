@@ -27,3 +27,13 @@ exports.getCohorts = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.deleteCohort = async (req, res) => {
+  try {
+    const result = await cohortAdminService.deleteCohort(req.params.id, req.user._id);
+    return res.json({ message: 'Cohort deleted successfully', result });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+

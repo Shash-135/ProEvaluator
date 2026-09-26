@@ -1,4 +1,10 @@
 const Cohort = require('../../models/Cohort');
+const Batch = require('../../models/Batch');
+const Team = require('../../models/Team');
+const Milestone = require('../../models/Milestone');
+const User = require('../../models/User');
+const StudentMilestoneScore = require('../../models/StudentMilestoneScore');
+const GitHubMetricsCache = require('../../models/GitHubMetricsCache');
 const AdminActionLog = require('../../models/AdminActionLog');
 
 class CohortAdminService {
@@ -43,6 +49,53 @@ class CohortAdminService {
     });
 
     return before;
+  }
+
+  async deleteCohort(cohortId, adminId) {
+    const cohort = await Cohort.findById(cohortId);
+    if (!cohort) throw new Error('Cohort not found.');
+
+    const beforeSnap = cohort.toObject();
+
+    // Find all batches belonging to this cohort
+    const batches = await Batch.find({ cohortId });
+    const batchIds = batches.map((b) => b._id);
+
+    if (batchIds.length > 0) {
+      // Find all teams in these batches
+      const teams = await Team.find({ batchId: { $in: batchIds } });
+      const teamIds = teams.map((t) => t._id);
+
+      // Clean up downstream scores and metric caches for teams
+      if (teamIds.length > 0) {
+        await StudentMilestoneScore.deleteMany({ teamId: { $in: teamIds } });
+        await GitHubMetricsCache.deleteMany({ teamId: { $in: teamIds } });
+        await Team.deleteMany({ _id: { $in: teamIds } });
+      }
+
+      // Delete milestones in these batches
+      await Milestone.deleteMany({ batchId: { $in: batchIds } });
+
+      // Delete the batches
+      await Batch.deleteMany({ _id: { $in: batchIds } });
+    }
+
+    // Unset cohortId on any users assigned to this cohort
+    await User.updateMany({ cohortId }, { $unset: { cohortId: '' } });
+
+    // Delete cohort
+    await Cohort.findByIdAndDelete(cohortId);
+
+    await AdminActionLog.create({
+      actorId: adminId,
+      action: 'cohort.delete',
+      targetId: cohortId,
+      targetModel: 'Cohort',
+      beforeSnapshot: beforeSnap,
+      details: `Deleted cohort '${cohort.name}' and cascade removed ${batchIds.length} associated batches`
+    });
+
+    return { deletedCohortId: cohortId, name: cohort.name };
   }
 
   async getCohorts(filter = {}) {

@@ -1,4 +1,8 @@
 const Batch = require('../../models/Batch');
+const Team = require('../../models/Team');
+const Milestone = require('../../models/Milestone');
+const StudentMilestoneScore = require('../../models/StudentMilestoneScore');
+const GitHubMetricsCache = require('../../models/GitHubMetricsCache');
 const AdminActionLog = require('../../models/AdminActionLog');
 
 class BatchAdminService {
@@ -32,6 +36,8 @@ class BatchAdminService {
     const beforeSnap = before.toObject();
     if (data.name !== undefined) before.name = data.name;
     if (data.cohortId !== undefined) before.cohortId = data.cohortId;
+    if (data.minTeamSize !== undefined) before.minTeamSize = data.minTeamSize;
+    if (data.maxTeamSize !== undefined) before.maxTeamSize = data.maxTeamSize;
     if (data.isActive !== undefined) before.isActive = data.isActive;
 
     await before.save();
@@ -74,6 +80,40 @@ class BatchAdminService {
 
   async archiveBatch(batchId, adminId) {
     return this.updateBatch(batchId, { isActive: false }, adminId);
+  }
+
+  async deleteBatch(batchId, adminId) {
+    const batch = await Batch.findById(batchId);
+    if (!batch) throw new Error('Batch not found.');
+
+    const beforeSnap = batch.toObject();
+
+    // Find and delete all teams in this batch with downstream cleanup
+    const teams = await Team.find({ batchId });
+    const teamIds = teams.map((t) => t._id);
+
+    if (teamIds.length > 0) {
+      await StudentMilestoneScore.deleteMany({ teamId: { $in: teamIds } });
+      await GitHubMetricsCache.deleteMany({ teamId: { $in: teamIds } });
+      await Team.deleteMany({ _id: { $in: teamIds } });
+    }
+
+    // Delete milestones in this batch
+    await Milestone.deleteMany({ batchId });
+
+    // Delete the batch
+    await Batch.findByIdAndDelete(batchId);
+
+    await AdminActionLog.create({
+      actorId: adminId,
+      action: 'batch.delete',
+      targetId: batchId,
+      targetModel: 'Batch',
+      beforeSnapshot: beforeSnap,
+      details: `Deleted semester/batch '${batch.name}' and cascade removed ${teamIds.length} teams and all milestones`
+    });
+
+    return { deletedBatchId: batchId, name: batch.name };
   }
 
   async getBatches(filter = {}) {

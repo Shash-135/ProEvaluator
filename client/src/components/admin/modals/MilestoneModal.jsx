@@ -1,34 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
 
-export const MilestoneModal = ({ setShowMilestoneModal, activeBatchId }) => {
+export const MilestoneModal = ({
+  setShowMilestoneModal,
+  activeBatchId,
+  editingMilestone = null,
+  setEditingMilestone = () => {}
+}) => {
   const queryClient = useQueryClient();
-  const [mOrder, setMOrder] = useState(1);
-  const [mTitle, setMTitle] = useState('');
-  const [mMaxScore, setMMaxScore] = useState(100);
-  const [mRubric, setMRubric] = useState('');
-  const [mRequiresExternalReview, setMRequiresExternalReview] = useState(false);
-  const [mRequiresDeliverable, setMRequiresDeliverable] = useState(false);
-  const [mDeliverableInstructions, setMDeliverableInstructions] = useState('');
+  const [mOrder, setMOrder] = useState(editingMilestone?.order ?? 1);
+  const [mTitle, setMTitle] = useState(editingMilestone?.title || '');
+  const [mMaxScore, setMMaxScore] = useState(editingMilestone?.maxScore ?? 100);
+  const [mRubric, setMRubric] = useState(editingMilestone?.rubric || '');
+  const [mRequiresExternalReview, setMRequiresExternalReview] = useState(editingMilestone?.requiresExternalReview ?? false);
+  const [mRequiresDeliverable, setMRequiresDeliverable] = useState(editingMilestone?.requiresDeliverable ?? false);
+  const [mDeliverableInstructions, setMDeliverableInstructions] = useState(editingMilestone?.deliverableInstructions || '');
 
-  const createMilestoneMutation = useMutation({
-    mutationFn: async (payload) => (await api.post('/admin/milestones', payload)).data,
+  useEffect(() => {
+    if (editingMilestone) {
+      setMOrder(editingMilestone.order ?? 1);
+      setMTitle(editingMilestone.title || '');
+      setMMaxScore(editingMilestone.maxScore ?? 100);
+      setMRubric(editingMilestone.rubric || '');
+      setMRequiresExternalReview(editingMilestone.requiresExternalReview ?? false);
+      setMRequiresDeliverable(editingMilestone.requiresDeliverable ?? false);
+      setMDeliverableInstructions(editingMilestone.deliverableInstructions || '');
+    }
+  }, [editingMilestone]);
+
+  const saveMilestoneMutation = useMutation({
+    mutationFn: async (payload) => {
+      if (editingMilestone) {
+        return (await api.patch(`/admin/milestones/${editingMilestone.id || editingMilestone._id}`, payload)).data;
+      }
+      return (await api.post('/admin/milestones', payload)).data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-milestones'] });
       setShowMilestoneModal(false);
+      setEditingMilestone(null);
     }
   });
+
+  const handleClose = () => {
+    setShowMilestoneModal(false);
+    setEditingMilestone(null);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-bold text-foreground mb-4">Add Milestone Template</h3>
+        <h3 className="text-lg font-bold text-foreground mb-4">
+          {editingMilestone ? 'Edit Milestone Template' : 'Add Milestone Template'}
+        </h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            createMilestoneMutation.mutate({
-              batchId: activeBatchId,
+            const payload = {
               order: Number(mOrder),
               title: mTitle,
               maxScore: Number(mMaxScore),
@@ -36,7 +65,11 @@ export const MilestoneModal = ({ setShowMilestoneModal, activeBatchId }) => {
               requiresExternalReview: mRequiresExternalReview,
               requiresDeliverable: mRequiresDeliverable,
               deliverableInstructions: mDeliverableInstructions
-            });
+            };
+            if (!editingMilestone) {
+              payload.batchId = activeBatchId;
+            }
+            saveMilestoneMutation.mutate(payload);
           }}
           className="space-y-4"
         >
@@ -131,13 +164,17 @@ export const MilestoneModal = ({ setShowMilestoneModal, activeBatchId }) => {
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
             <button
               type="button"
-              onClick={() => setShowMilestoneModal(false)}
+              onClick={handleClose}
               className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors"
             >
               Cancel
             </button>
-            <button type="submit" className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors">
-              Save Milestone
+            <button
+              type="submit"
+              disabled={saveMilestoneMutation.isPending}
+              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50"
+            >
+              {saveMilestoneMutation.isPending ? 'Saving...' : editingMilestone ? 'Save Changes' : 'Save Milestone'}
             </button>
           </div>
         </form>
@@ -145,3 +182,4 @@ export const MilestoneModal = ({ setShowMilestoneModal, activeBatchId }) => {
     </div>
   );
 };
+

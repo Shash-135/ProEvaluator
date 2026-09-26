@@ -1,27 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
 
-export const CohortModal = ({ setShowCohortModal }) => {
+export const CohortModal = ({ setShowCohortModal, editingCohort = null, setEditingCohort = () => {} }) => {
   const queryClient = useQueryClient();
-  const [cohortName, setCohortName] = useState('');
+  const [cohortName, setCohortName] = useState(editingCohort?.name || '');
 
-  const createCohortMutation = useMutation({
-    mutationFn: async (payload) => (await api.post('/admin/cohorts', payload)).data,
+  useEffect(() => {
+    if (editingCohort) {
+      setCohortName(editingCohort.name || '');
+    }
+  }, [editingCohort]);
+
+  const saveCohortMutation = useMutation({
+    mutationFn: async (payload) => {
+      if (editingCohort) {
+        return (await api.patch(`/admin/cohorts/${editingCohort.id || editingCohort._id}`, payload)).data;
+      }
+      return (await api.post('/admin/cohorts', payload)).data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-cohorts'] });
       setShowCohortModal(false);
+      setEditingCohort(null);
     }
   });
+
+  const handleClose = () => {
+    setShowCohortModal(false);
+    setEditingCohort(null);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in zoom-in-95 duration-200">
-        <h3 className="text-lg font-bold text-foreground mb-4">Create New Cohort</h3>
+        <h3 className="text-lg font-bold text-foreground mb-4">
+          {editingCohort ? 'Edit Cohort' : 'Create New Cohort'}
+        </h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            createCohortMutation.mutate({ name: cohortName });
+            saveCohortMutation.mutate({ name: cohortName });
           }}
           className="space-y-4"
         >
@@ -40,13 +59,17 @@ export const CohortModal = ({ setShowCohortModal }) => {
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
             <button
               type="button"
-              onClick={() => setShowCohortModal(false)}
+              onClick={handleClose}
               className="px-5 py-2.5 text-sm font-semibold text-foreground bg-background hover:bg-muted border border-border rounded-xl transition-colors"
             >
               Cancel
             </button>
-            <button type="submit" className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors">
-              Create Cohort
+            <button
+              type="submit"
+              disabled={saveCohortMutation.isPending}
+              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-sm transition-colors disabled:opacity-50"
+            >
+              {saveCohortMutation.isPending ? 'Saving...' : editingCohort ? 'Save Changes' : 'Create Cohort'}
             </button>
           </div>
         </form>
@@ -54,3 +77,4 @@ export const CohortModal = ({ setShowCohortModal }) => {
     </div>
   );
 };
+

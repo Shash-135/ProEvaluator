@@ -46,3 +46,13 @@ exports.getBatches = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.deleteBatch = async (req, res) => {
+  try {
+    const result = await batchAdminService.deleteBatch(req.params.id, req.user._id);
+    return res.json({ message: 'Batch deleted successfully', result });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+

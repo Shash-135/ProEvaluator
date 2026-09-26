@@ -1,30 +1,52 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
-import { BookOpen, Plus, ArrowLeft, RefreshCw, Users, MoveRight, XCircle, FileSpreadsheet } from 'lucide-react';
+import {
+  BookOpen,
+  Plus,
+  ArrowLeft,
+  RefreshCw,
+  Users,
+  MoveRight,
+  XCircle,
+  FileSpreadsheet,
+  Edit2,
+  Trash2,
+  Shuffle,
+  UserCheck
+} from 'lucide-react';
 import { downloadCsv } from '../../../utils/exportCsv';
+
 export const BatchesTab = ({
   cohortsData,
   selectedCohortId,
   setSelectedCohortId,
-  batchesData, 
-  selectedBatchId, 
-  setSelectedBatchId, 
-  batchDetailTab, 
+  batchesData,
+  selectedBatchId,
+  setSelectedBatchId,
+  batchDetailTab,
   setBatchDetailTab,
   setShowBatchModal,
+  setEditingBatch,
   setShowCohortModal,
+  setEditingCohort,
   setShowMilestoneModal,
+  setEditingMilestone,
   setShowMoveMemberModal,
   setAssignTeamId,
-  setSelectedTeacherId
+  setSelectedTeacherId,
+  setShowAutoFormModal,
+  setShowAutoAssignModal,
+  setShowTeamModal,
+  setEditingTeam,
+  teachers = []
 }) => {
   const queryClient = useQueryClient();
-  const activeCohort = cohortsData?.cohorts?.find(c => (c.id || c._id) === selectedCohortId);
+  const activeCohort = cohortsData?.cohorts?.find((c) => (c.id || c._id) === selectedCohortId);
   const activeBatch = batchesData?.batches?.find((b) => (b.id || b._id) === selectedBatchId);
   const activeBatchId = selectedBatchId;
 
-  const cohortBatches = batchesData?.batches?.filter(b => b.cohortId === selectedCohortId) || [];
+  const cohortBatches = batchesData?.batches?.filter((b) => b.cohortId === selectedCohortId) || [];
 
   const { data: teamsData } = useQuery({
     queryKey: ['admin-teams', activeBatchId],
@@ -36,6 +58,29 @@ export const BatchesTab = ({
     queryKey: ['admin-milestones', activeBatchId],
     queryFn: async () => (await api.get(`/admin/milestones?batchId=${activeBatchId || ''}`)).data,
     enabled: !!activeBatchId
+  });
+
+  const deleteCohortMutation = useMutation({
+    mutationFn: async (cohortId) => (await api.delete(`/admin/cohorts/${cohortId}`)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-cohorts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-batches'] });
+    }
+  });
+
+  const deleteBatchMutation = useMutation({
+    mutationFn: async (batchId) => (await api.delete(`/admin/batches/${batchId}`)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-batches'] });
+      setSelectedBatchId(null);
+    }
+  });
+
+  const deleteMilestoneMutation = useMutation({
+    mutationFn: async (milestoneId) => (await api.delete(`/admin/milestones/${milestoneId}`)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-milestones'] });
+    }
   });
 
   const reconcileScoresMutation = useMutation({
@@ -67,15 +112,20 @@ export const BatchesTab = ({
     }
   });
 
+  // 1. COHORTS VIEW
   if (!selectedCohortId) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-black text-foreground">Academic Cohorts</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Manage cohorts, track semesters, and oversee student allocations.</p>
           </div>
           <button
-            onClick={() => setShowCohortModal && setShowCohortModal(true)}
+            onClick={() => {
+              setEditingCohort(null);
+              setShowCohortModal(true);
+            }}
             className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
           >
             <Plus size={16} /> <span className="hidden sm:inline">New Cohort</span>
@@ -90,32 +140,65 @@ export const BatchesTab = ({
                 setSelectedCohortId(c.id || c._id);
                 setSelectedBatchId(null);
               }}
-              className="bg-card border border-border p-5 rounded-2xl shadow-sm hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group flex flex-col"
+              className="bg-card border border-border p-5 rounded-2xl shadow-sm hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group flex flex-col relative"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2.5 bg-primary/10 rounded-xl text-primary group-hover:scale-110 transition-transform">
-                   <BookOpen size={20} />
+                  <BookOpen size={20} />
                 </div>
-                <span className={`px-2 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider border ${
-                  c.isActive ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'
-                }`}>
-                  {c.isActive ? 'ACTIVE' : 'INACTIVE'}
-                </span>
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <span
+                    className={`px-2 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider border ${
+                      c.isActive
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                        : 'bg-muted text-muted-foreground border-border'
+                    }`}
+                  >
+                    {c.isActive ? 'ACTIVE' : 'INACTIVE'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setEditingCohort(c);
+                      setShowCohortModal(true);
+                    }}
+                    title="Edit Cohort"
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    <Edit2 size={13} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Are you sure you want to permanently delete cohort '${c.name}'?\n\nWARNING: All associated semesters, teams, and milestone templates will be cascade deleted!`
+                        )
+                      ) {
+                        deleteCohortMutation.mutate(c.id || c._id);
+                      }
+                    }}
+                    title="Delete Cohort"
+                    className="p-1.5 rounded-lg text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
               <h3 className="text-lg font-bold text-foreground mb-4">{c.name}</h3>
-              
+
               <div className="mt-auto pt-4 border-t border-border flex items-center justify-end">
-                 <div className="text-primary text-xs font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                   View Semesters <MoveRight size={14} />
-                 </div>
+                <div className="text-primary text-xs font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
+                  View Semesters <MoveRight size={14} />
+                </div>
               </div>
             </div>
           ))}
 
           {(!cohortsData?.cohorts || cohortsData.cohorts.length === 0) && (
             <div className="col-span-full py-16 text-center bg-card border border-border rounded-2xl shadow-sm">
-               <p className="text-sm font-bold text-foreground">No cohorts created yet.</p>
-               <p className="text-xs text-muted-foreground mt-1">Create an academic cohort to begin setting up semesters and teams.</p>
+              <p className="text-sm font-bold text-foreground">No cohorts created yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Create an academic cohort to begin setting up semesters and teams.
+              </p>
             </div>
           )}
         </div>
@@ -123,11 +206,15 @@ export const BatchesTab = ({
     );
   }
 
+  // 2. BATCHES / SEMESTERS VIEW
   if (!selectedBatchId) {
     return (
       <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
         <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-          <button onClick={() => setSelectedCohortId(null)} className="hover:text-foreground transition-colors flex items-center gap-1">
+          <button
+            onClick={() => setSelectedCohortId(null)}
+            className="hover:text-foreground transition-colors flex items-center gap-1"
+          >
             <ArrowLeft size={16} /> Cohorts
           </button>
           <span>/</span>
@@ -137,9 +224,13 @@ export const BatchesTab = ({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-black text-foreground">{activeCohort?.name} Semesters</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Semesters, team size constraints, and grading milestones.</p>
           </div>
           <button
-            onClick={() => setShowBatchModal(true)}
+            onClick={() => {
+              setEditingBatch(null);
+              setShowBatchModal(true);
+            }}
             className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
           >
             <Plus size={16} /> <span className="hidden sm:inline">New Semester</span>
@@ -158,15 +249,14 @@ export const BatchesTab = ({
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2.5 bg-primary/10 rounded-xl text-primary group-hover:scale-110 transition-transform">
-                   <BookOpen size={20} />
+                  <BookOpen size={20} />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     {b.isActive ? 'Active' : 'Inactive'}
                   </span>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onClick={() => {
                       setActiveBatchMutation.mutate({ batchId: b.id || b._id, isActive: !b.isActive });
                     }}
                     disabled={setActiveBatchMutation.isPending}
@@ -180,23 +270,52 @@ export const BatchesTab = ({
                       }`}
                     />
                   </button>
+                  <button
+                    onClick={() => {
+                      setEditingBatch(b);
+                      setShowBatchModal(true);
+                    }}
+                    title="Edit Semester"
+                    className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    <Edit2 size={13} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Are you sure you want to permanently delete semester '${b.name}'?\n\nWARNING: All teams and milestones in this semester will be permanently deleted!`
+                        )
+                      ) {
+                        deleteBatchMutation.mutate(b.id || b._id);
+                      }
+                    }}
+                    title="Delete Semester"
+                    className="p-1 rounded-lg text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
               <h3 className="text-lg font-bold text-foreground mb-1">{b.name}</h3>
-              <p className="text-sm text-muted-foreground font-medium mb-6">Team Size: {b.minTeamSize}-{b.maxTeamSize}</p>
-              
+              <p className="text-sm text-muted-foreground font-medium mb-6">
+                Team Size: {b.minTeamSize}-{b.maxTeamSize} Members
+              </p>
+
               <div className="mt-auto pt-4 border-t border-border flex items-center justify-end">
-                 <div className="text-primary text-xs font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                   Manage <MoveRight size={14} />
-                 </div>
+                <div className="text-primary text-xs font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
+                  Manage <MoveRight size={14} />
+                </div>
               </div>
             </div>
           ))}
 
           {cohortBatches.length === 0 && (
             <div className="col-span-full py-16 text-center bg-card border border-border rounded-2xl shadow-sm">
-               <p className="text-sm font-bold text-foreground">No semesters created for this cohort yet.</p>
-               <p className="text-xs text-muted-foreground mt-1">Add a semester to configure milestone requirements and teams.</p>
+              <p className="text-sm font-bold text-foreground">No semesters created for this cohort yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Add a semester to configure milestone requirements and teams.
+              </p>
             </div>
           )}
         </div>
@@ -211,12 +330,12 @@ export const BatchesTab = ({
     }
     const headers = ['Team Name', 'Team Status', 'Evaluator', 'Member Name', 'Member Email', 'GitHub Username'];
     const rows = [];
-    teamsData.teams.forEach(t => {
+    teamsData.teams.forEach((t) => {
       const evaluatorName = t.assignedTeacherId?.name || 'Unassigned';
       if (!t.members || t.members.length === 0) {
         rows.push([t.name, t.status, evaluatorName, 'No Members', '', '']);
       } else {
-        t.members.forEach(m => {
+        t.members.forEach((m) => {
           rows.push([t.name, t.status, evaluatorName, m.name || '', m.email || '', m.githubUsername || '']);
         });
       }
@@ -226,216 +345,343 @@ export const BatchesTab = ({
     downloadCsv(filename, headers, rows);
   };
 
+  // 3. BATCH DETAIL (MILESTONES & TEAMS)
   return (
     <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-       <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-          <button onClick={() => setSelectedCohortId(null)} className="hover:text-foreground transition-colors flex items-center gap-1">
-            <ArrowLeft size={16} /> Cohorts
-          </button>
-          <span>/</span>
-          <button onClick={() => setSelectedBatchId(null)} className="hover:text-foreground transition-colors flex items-center gap-1">
+      <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+        <button
+          onClick={() => setSelectedCohortId(null)}
+          className="hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          <ArrowLeft size={16} /> Cohorts
+        </button>
+        <span>/</span>
+        <button
+          onClick={() => setSelectedBatchId(null)}
+          className="hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          {activeCohort?.name}
+        </button>
+        <span>/</span>
+        <span className="text-foreground">{activeBatch?.name}</span>
+      </div>
+
+      <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-foreground">{activeBatch?.name}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Team limits: {activeBatch?.minTeamSize} to {activeBatch?.maxTeamSize} members | Academic Cohort:{' '}
             {activeCohort?.name}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportBatchRoster}
+            className="px-3 py-2 rounded-xl bg-background hover:bg-muted text-xs font-bold text-foreground border border-border transition-colors flex items-center gap-1.5 shadow-sm"
+            title="Export Batch Roster & Teams CSV"
+          >
+            <FileSpreadsheet size={14} className="text-emerald-600" />
+            <span>Export Roster CSV</span>
           </button>
-          <span>/</span>
-          <span className="text-foreground">{activeBatch?.name}</span>
-       </div>
 
-       <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-foreground">{activeBatch?.name}</h2>
-          </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center bg-muted p-1 rounded-xl">
             <button
-              onClick={handleExportBatchRoster}
-              className="px-3 py-2 rounded-xl bg-background hover:bg-muted text-xs font-bold text-foreground border border-border transition-colors flex items-center gap-1.5 shadow-sm"
-              title="Export Batch Roster & Teams CSV"
+              onClick={() => setBatchDetailTab('milestones')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                batchDetailTab === 'milestones'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
-              <FileSpreadsheet size={14} className="text-emerald-600" />
-              <span>Export Roster CSV</span>
+              Milestones
             </button>
+            <button
+              onClick={() => setBatchDetailTab('teams')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                batchDetailTab === 'teams'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Team Oversight
+            </button>
+          </div>
+        </div>
+      </div>
 
-            <div className="flex items-center bg-muted p-1 rounded-xl">
+      {batchDetailTab === 'milestones' && (
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+            <div>
+              <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                <BookOpen size={18} className="text-primary" /> Milestone Templates
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setBatchDetailTab('milestones')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${batchDetailTab === 'milestones' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => reconcileScoresMutation.mutate(activeBatchId)}
+                className="px-3 py-2 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold rounded-lg border border-border flex items-center gap-1.5 transition"
+                title="Idempotent Score Reconciliation"
               >
-                Milestones
+                <RefreshCw size={14} /> Reconcile
               </button>
               <button
-                onClick={() => setBatchDetailTab('teams')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${batchDetailTab === 'teams' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => {
+                  setEditingMilestone(null);
+                  setShowMilestoneModal(true);
+                }}
+                className="px-3 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg flex items-center gap-1.5 transition shadow-sm"
               >
-                Team Oversight
+                <Plus size={14} /> Add Milestone
               </button>
             </div>
           </div>
-       </div>
 
-       {batchDetailTab === 'milestones' && (
-         <div className="bg-card border border-border rounded-2xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
-              <div>
-                <h3 className="font-bold text-base text-foreground flex items-center gap-2">
-                  <BookOpen size={18} className="text-primary" /> Milestone Templates
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => reconcileScoresMutation.mutate(activeBatchId)}
-                  className="px-3 py-2 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold rounded-lg border border-border flex items-center gap-1.5 transition"
-                  title="Idempotent Score Reconciliation"
-                >
-                  <RefreshCw size={14} /> Reconcile
-                </button>
-                <button
-                  onClick={() => setShowMilestoneModal(true)}
-                  className="px-3 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg flex items-center gap-1.5 transition shadow-sm"
-                >
-                  <Plus size={14} /> Add Milestone
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {milestonesData?.milestones?.map((m) => (
-                <div key={m.id || m._id} className="p-4 rounded-xl bg-background border border-border hover:border-primary/30 transition-colors">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {milestonesData?.milestones?.map((m) => (
+              <div
+                key={m.id || m._id}
+                className="p-4 rounded-xl bg-background border border-border hover:border-primary/30 transition-colors flex flex-col justify-between"
+              >
+                <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-black text-primary uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-md">
                       Milestone {m.order}
                     </span>
-                    <span className="text-[11px] font-bold text-muted-foreground">{m.maxScore} Marks</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-muted-foreground">{m.maxScore} Marks</span>
+                      <button
+                        onClick={() => {
+                          setEditingMilestone(m);
+                          setShowMilestoneModal(true);
+                        }}
+                        title="Edit Milestone"
+                        className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete milestone '${m.title}'?`)) {
+                            deleteMilestoneMutation.mutate(m.id || m._id);
+                          }
+                        }}
+                        title="Delete Milestone"
+                        className="p-1 rounded text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                   <h4 className="text-sm font-bold text-foreground mb-2">{m.title}</h4>
                   {m.rubric && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{m.rubric}</p>}
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {m.requiresExternalReview && (
-                      <span className="text-[9px] font-bold bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-md border border-amber-500/20">
-                        EXTERNAL REVIEW
-                      </span>
-                    )}
-                    {m.requiresDeliverable && (
-                      <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20">
-                        DELIVERABLE MANDATORY
-                      </span>
-                    )}
-                  </div>
                 </div>
-              ))}
 
-              {(!milestonesData?.milestones || milestonesData.milestones.length === 0) && (
-                <div className="col-span-full py-12 text-center bg-muted/20 border border-border rounded-xl">
-                  <p className="text-xs font-bold text-foreground">No milestone templates defined yet</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Click 'Add Milestone' above to create evaluation templates.</p>
+                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/50">
+                  {m.requiresExternalReview && (
+                    <span className="text-[9px] font-bold bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-md border border-amber-500/20">
+                      EXTERNAL REVIEW
+                    </span>
+                  )}
+                  {m.requiresDeliverable && (
+                    <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20">
+                      DELIVERABLE MANDATORY
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
-         </div>
-       )}
-
-       {batchDetailTab === 'teams' && (
-         <div className="bg-card border border-border rounded-2xl shadow-sm p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-4 mb-6">
-              <div>
-                <h3 className="font-bold text-base text-foreground flex items-center gap-2">
-                  <Users size={18} className="text-primary" /> Team Oversight
-                </h3>
               </div>
+            ))}
+
+            {(!milestonesData?.milestones || milestonesData.milestones.length === 0) && (
+              <div className="col-span-full py-12 text-center bg-muted/20 border border-border rounded-xl">
+                <p className="text-xs font-bold text-foreground">No milestone templates defined yet</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Click 'Add Milestone' above to create evaluation templates.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {batchDetailTab === 'teams' && (
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-border gap-4 mb-6">
+            <div>
+              <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                <Users size={18} className="text-primary" /> Team Oversight & Allocation
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Total Teams: {teamsData?.teams?.length || 0} | Manage formations, randomize unassigned students, and balance evaluator loads.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setShowAutoFormModal(true)}
+                className="px-3.5 py-2 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs rounded-xl flex items-center gap-1.5 transition border border-primary/20"
+                title="Randomly group remaining students into teams"
+              >
+                <Shuffle size={14} /> Auto-Form Teams
+              </button>
+
+              <button
+                onClick={() => setShowAutoAssignModal(true)}
+                className="px-3.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 font-bold text-xs rounded-xl flex items-center gap-1.5 transition border border-blue-500/20"
+                title="Equally and randomly assign teams to available teachers"
+              >
+                <UserCheck size={14} /> Auto-Assign Faculty
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingTeam(null);
+                  setShowTeamModal(true);
+                }}
+                className="px-3.5 py-2 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl flex items-center gap-1.5 transition border border-border"
+              >
+                <Plus size={14} /> Add Team
+              </button>
 
               <button
                 onClick={() => setShowMoveMemberModal(true)}
-                className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-sm whitespace-nowrap"
+                className="px-3.5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl flex items-center gap-1.5 transition shadow-sm whitespace-nowrap"
               >
-                <MoveRight size={14} /> Move Team Member
+                <MoveRight size={14} /> Move Member
               </button>
             </div>
+          </div>
 
-            <div className="space-y-4">
-              {teamsData?.teams?.map((team) => (
-                <div key={team.id || team._id} className="p-4 rounded-xl bg-background border border-border flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-colors hover:border-border/80">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <h4 className="font-bold text-foreground text-sm">{team.name}</h4>
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-wider ${
+          <div className="space-y-4">
+            {teamsData?.teams?.map((team) => (
+              <div
+                key={team.id || team._id}
+                className="p-4 rounded-xl bg-background border border-border flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-colors hover:border-border/80"
+              >
+                <div>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <h4 className="font-bold text-foreground text-sm">{team.name}</h4>
+                    <span
+                      className={`text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-wider ${
                         team.status === 'active'
                           ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                           : team.status === 'forming'
                           ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
                           : 'bg-primary/10 text-primary border-primary/20'
-                      }`}>
-                        {team.status}
+                      }`}
+                    >
+                      {team.status}
+                    </span>
+
+                    {activeBatch?.minTeamSize && team.members.length < activeBatch.minTeamSize && (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                        {team.members.length}/{activeBatch.minTeamSize} Min Members
                       </span>
+                    )}
 
-                      {activeBatch?.minTeamSize && team.members.length < activeBatch.minTeamSize && (
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                          {team.members.length}/{activeBatch.minTeamSize} Min Members
-                        </span>
-                      )}
+                    {!team.assignedTeacherId ? (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                        Needs Evaluator
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-semibold text-muted-foreground">
+                        Evaluator: {team.assignedTeacherId?.name || 'Assigned'}
+                      </span>
+                    )}
 
-                      {!team.assignedTeacherId ? (
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                          Needs Evaluator
-                        </span>
-                      ) : (
-                        <span className="text-[9px] font-semibold text-muted-foreground">
-                          Evaluator: {team.assignedTeacherId?.name || 'Assigned'}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mr-1">Members:</span>
-                      {team.members.map((m) => (
-                        <span key={m.id || m._id} className="text-xs bg-muted text-foreground px-2.5 py-1 rounded-md border border-border font-medium flex items-center gap-1">
-                          {m.name} <span className="text-muted-foreground text-[10px]">@{m.githubUsername || 'unlinked'}</span>
-                        </span>
-                      ))}
-                    </div>
+                    {team.repoUrl && (
+                      <a
+                        href={team.repoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-primary underline truncate max-w-[200px]"
+                      >
+                        {team.repoUrl}
+                      </a>
+                    )}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-3 xl:pt-0 border-t xl:border-0 border-border">
-                    <select
-                      value={team.status}
-                      onChange={(e) => overrideStatusMutation.mutate({ teamId: team.id || team._id, status: e.target.value })}
-                      className="bg-background border border-border rounded-lg px-3 py-1.5 text-xs font-bold text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
-                    >
-                      <option value="forming">Status: forming</option>
-                      <option value="active">Status: active</option>
-                      <option value="completed">Status: completed</option>
-                    </select>
-
-                    <button
-                      onClick={() => {
-                        setAssignTeamId(team.id || team._id);
-                        setSelectedTeacherId(team.assignedTeacherId?.id || team.assignedTeacherId || '');
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-background hover:bg-muted text-xs font-bold text-foreground border border-border transition-colors"
-                    >
-                      Assign Teacher
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Are you sure you want to dissolve '${team.name}'? Affected member score/metric links will be set to null cleanly.`)) {
-                          dissolveTeamMutation.mutate(team.id || team._id);
-                        }
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs font-bold text-destructive border border-destructive/20 flex items-center gap-1.5 transition-colors"
-                    >
-                      <XCircle size={14} /> Dissolve
-                    </button>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mr-1">
+                      Members ({team.members?.length || 0}):
+                    </span>
+                    {team.members?.map((m) => (
+                      <span
+                        key={m.id || m._id}
+                        className="text-xs bg-muted text-foreground px-2.5 py-1 rounded-md border border-border font-medium flex items-center gap-1"
+                      >
+                        {m.name} <span className="text-muted-foreground text-[10px]">@{m.githubUsername || 'unlinked'}</span>
+                      </span>
+                    ))}
+                    {(!team.members || team.members.length === 0) && (
+                      <span className="text-xs italic text-muted-foreground">No students assigned yet</span>
+                    )}
                   </div>
                 </div>
-              ))}
 
-              {(!teamsData?.teams || teamsData.teams.length === 0) && (
-                <div className="py-12 text-center bg-muted/20 border border-border rounded-xl">
-                  <p className="text-xs font-bold text-foreground">No teams formed in this batch yet</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Teams will appear here as students form groups or accept invitations.</p>
+                <div className="flex flex-wrap items-center gap-2 pt-3 xl:pt-0 border-t xl:border-0 border-border">
+                  <select
+                    value={team.status}
+                    onChange={(e) =>
+                      overrideStatusMutation.mutate({ teamId: team.id || team._id, status: e.target.value })
+                    }
+                    className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-bold text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+                  >
+                    <option value="forming">Status: forming</option>
+                    <option value="active">Status: active</option>
+                    <option value="completed">Status: completed</option>
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      setEditingTeam(team);
+                      setShowTeamModal(true);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg bg-background hover:bg-muted text-xs font-bold text-foreground border border-border transition-colors flex items-center gap-1"
+                    title="Edit Team Name / Repo URL"
+                  >
+                    <Edit2 size={12} /> Edit
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAssignTeamId(team.id || team._id);
+                      setSelectedTeacherId(team.assignedTeacherId?.id || team.assignedTeacherId || '');
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg bg-background hover:bg-muted text-xs font-bold text-foreground border border-border transition-colors"
+                  >
+                    Assign Teacher
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Are you sure you want to dissolve '${team.name}'? Affected member score/metric links will be set to null cleanly.`
+                        )
+                      ) {
+                        dissolveTeamMutation.mutate(team.id || team._id);
+                      }
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs font-bold text-destructive border border-destructive/20 flex items-center gap-1 transition-colors"
+                  >
+                    <XCircle size={13} /> Dissolve
+                  </button>
                 </div>
-              )}
-            </div>
-         </div>
-       )}
+              </div>
+            ))}
+
+            {(!teamsData?.teams || teamsData.teams.length === 0) && (
+              <div className="py-12 text-center bg-muted/20 border border-border rounded-xl">
+                <p className="text-xs font-bold text-foreground">No teams formed in this batch yet</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Click 'Auto-Form Teams' above to randomly assemble unassigned students into teams.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
