@@ -14,6 +14,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { downloadCsv } from '../utils/exportCsv';
+import { ContributionBreakdown } from '../components/ContributionBreakdown';
 
 export const ExternalDashboard = () => {
   const { openGradeModal } = useUiStore();
@@ -225,7 +226,11 @@ export const ExternalDashboard = () => {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
           
           {/* GitHub Metrics View (4 cols on xl) */}
-          <div className="xl:col-span-4 space-y-6">
+          <div className="xl:col-span-4 space-y-5">
+            {metricsData?.metrics?.students?.length > 0 && (
+              <ContributionBreakdown studentsMetrics={metricsData.metrics.students} />
+            )}
+
             <div className="bg-card border border-border rounded-2xl shadow-sm p-6">
               <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-border">
                 <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center">

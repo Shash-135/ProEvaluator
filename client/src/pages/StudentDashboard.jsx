@@ -16,6 +16,7 @@ import {
   GitBranch,
   CheckCircle2
 } from 'lucide-react';
+import { ContributionBreakdown } from '../components/ContributionBreakdown';
 
 export const StudentDashboard = () => {
   const { user } = useAuthStore();
@@ -366,6 +367,11 @@ export const StudentDashboard = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Team Workload Distribution (if team has multiple members) */}
+          {metricsData?.metrics?.students?.length > 1 && (
+            <ContributionBreakdown studentsMetrics={metricsData.metrics.students} />
           )}
         </div>
 
