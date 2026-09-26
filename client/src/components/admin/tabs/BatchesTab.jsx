@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
 import {
@@ -13,7 +13,13 @@ import {
   Edit2,
   Trash2,
   Shuffle,
-  UserCheck
+  UserCheck,
+  Search,
+  Clock,
+  AlertCircle,
+  Calendar,
+  Filter,
+  X
 } from 'lucide-react';
 import { downloadCsv } from '../../../utils/exportCsv';
 
@@ -59,6 +65,81 @@ export const BatchesTab = ({
     queryFn: async () => (await api.get(`/admin/milestones?batchId=${activeBatchId || ''}`)).data,
     enabled: !!activeBatchId
   });
+
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
+  const [teamStatusFilter, setTeamStatusFilter] = useState('all');
+
+  const getMilestoneDeadlineInfo = (dueDate) => {
+    if (!dueDate) return null;
+    const due = new Date(dueDate);
+    const now = new Date();
+    const diffMs = due.getTime() - now.getTime();
+    const isPast = diffMs < 0;
+    const diffDays = Math.ceil(Math.abs(diffMs) / (1000 * 60 * 60 * 24));
+
+    if (isPast) {
+      return {
+        label: `Overdue (${diffDays}d ago)`,
+        badgeClass: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
+        dateText: due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        isOverdue: true
+      };
+    }
+
+    if (diffDays === 0) {
+      return {
+        label: 'Due Today',
+        badgeClass: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+        dateText: due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        isOverdue: false
+      };
+    }
+
+    if (diffDays <= 3) {
+      return {
+        label: `Due in ${diffDays} day${diffDays > 1 ? 's' : ''}`,
+        badgeClass: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+        dateText: due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        isOverdue: false
+      };
+    }
+
+    return {
+      label: `Due in ${diffDays} days`,
+      badgeClass: 'bg-primary/10 text-primary border-primary/20',
+      dateText: due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+      isOverdue: false
+    };
+  };
+
+  const filteredTeams = useMemo(() => {
+    const list = teamsData?.teams || [];
+    return list.filter((team) => {
+      if (teamStatusFilter === 'needs_evaluator' && team.assignedTeacherId) return false;
+      if (
+        teamStatusFilter === 'under_capacity' &&
+        activeBatch?.minTeamSize &&
+        (team.members?.length || 0) >= activeBatch.minTeamSize
+      )
+        return false;
+      if (teamStatusFilter === 'active' && team.status !== 'active') return false;
+      if (teamStatusFilter === 'forming' && team.status !== 'forming') return false;
+
+      if (!teamSearchQuery.trim()) return true;
+      const q = teamSearchQuery.toLowerCase().trim();
+      const teamNameMatch = team.name?.toLowerCase().includes(q);
+      const repoMatch = team.repoUrl?.toLowerCase().includes(q);
+      const evaluatorMatch = team.assignedTeacherId?.name?.toLowerCase().includes(q);
+      const memberMatch = team.members?.some(
+        (m) =>
+          m.name?.toLowerCase().includes(q) ||
+          m.email?.toLowerCase().includes(q) ||
+          m.githubUsername?.toLowerCase().includes(q)
+      );
+
+      return Boolean(teamNameMatch || repoMatch || evaluatorMatch || memberMatch);
+    });
+  }, [teamsData?.teams, teamSearchQuery, teamStatusFilter, activeBatch?.minTeamSize]);
 
   const deleteCohortMutation = useMutation({
     mutationFn: async (cohortId) => (await api.delete(`/admin/cohorts/${cohortId}`)).data,
@@ -474,7 +555,31 @@ export const BatchesTab = ({
                     </div>
                   </div>
                   <h4 className="text-sm font-bold text-foreground mb-2">{m.title}</h4>
-                  {m.rubric && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{m.rubric}</p>}
+                  {m.rubric && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{m.rubric}</p>}
+
+                  {/* Deadline countdown */}
+                  {(() => {
+                    const dl = getMilestoneDeadlineInfo(m.dueDate);
+                    if (!dl) {
+                      return (
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium mb-2">
+                          <Calendar size={12} className="opacity-60" />
+                          <span>No deadline set</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${dl.badgeClass}`}>
+                          <Clock size={11} />
+                          {dl.label}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-medium">
+                          Due {dl.dateText}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/50">
@@ -552,8 +657,79 @@ export const BatchesTab = ({
             </div>
           </div>
 
+          {/* Live Filter & Search Bar */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-6 bg-muted/20 p-3 rounded-2xl border border-border">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={teamSearchQuery}
+                onChange={(e) => setTeamSearchQuery(e.target.value)}
+                placeholder="Search by team, member, email, @github, or evaluator..."
+                className="w-full bg-background border border-border rounded-xl pl-9 pr-9 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+              />
+              {teamSearchQuery && (
+                <button
+                  onClick={() => setTeamSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { key: 'all', label: 'All', count: teamsData?.teams?.length || 0 },
+                {
+                  key: 'needs_evaluator',
+                  label: 'Needs Evaluator',
+                  count: (teamsData?.teams || []).filter((t) => !t.assignedTeacherId).length
+                },
+                {
+                  key: 'under_capacity',
+                  label: 'Under Capacity',
+                  count: (teamsData?.teams || []).filter(
+                    (t) => activeBatch?.minTeamSize && (t.members?.length || 0) < activeBatch.minTeamSize
+                  ).length
+                },
+                {
+                  key: 'active',
+                  label: 'Active',
+                  count: (teamsData?.teams || []).filter((t) => t.status === 'active').length
+                },
+                {
+                  key: 'forming',
+                  label: 'Forming',
+                  count: (teamsData?.teams || []).filter((t) => t.status === 'forming').length
+                }
+              ].map((pill) => (
+                <button
+                  key={pill.key}
+                  onClick={() => setTeamStatusFilter(pill.key)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                    teamStatusFilter === pill.key
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
+                  }`}
+                >
+                  <span>{pill.label}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      teamStatusFilter === pill.key ? 'bg-primary-foreground/20 text-white' : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {pill.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-4">
-            {teamsData?.teams?.map((team) => (
+            {filteredTeams.map((team) => (
               <div
                 key={team.id || team._id}
                 className="p-4 rounded-xl bg-background border border-border flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-colors hover:border-border/80"
@@ -671,12 +847,32 @@ export const BatchesTab = ({
               </div>
             ))}
 
-            {(!teamsData?.teams || teamsData.teams.length === 0) && (
+            {filteredTeams.length === 0 && (
               <div className="py-12 text-center bg-muted/20 border border-border rounded-xl">
-                <p className="text-xs font-bold text-foreground">No teams formed in this batch yet</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Click 'Auto-Form Teams' above to randomly assemble unassigned students into teams.
-                </p>
+                {teamsData?.teams && teamsData.teams.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-foreground">No teams match your search or filter</p>
+                    <p className="text-xs text-muted-foreground">
+                      Try searching for a different keyword or resetting the category filter.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setTeamSearchQuery('');
+                        setTeamStatusFilter('all');
+                      }}
+                      className="mt-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg border border-primary/20 transition-colors"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs font-bold text-foreground">No teams formed in this semester yet</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Click 'Auto-Form Teams' above to randomly assemble unassigned students into teams.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

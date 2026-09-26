@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
-import { LogOut, Shield, GraduationCap, Eye, UserCheck } from 'lucide-react';
+import { LogOut, Shield, GraduationCap, Eye, UserCheck, Bell, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../api/client';
 
 const ROLE_BADGES = {
   admin: { label: 'Admin', icon: Shield, className: 'bg-primary/10 text-primary border-primary/20' },
@@ -15,6 +17,45 @@ import { ThemeToggle } from './ThemeToggle';
 export const Navbar = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef(null);
+
+  const isStudent = user?.role === 'student';
+
+  const { data: requestsData } = useQuery({
+    queryKey: ['join-requests'],
+    queryFn: async () => (await api.get('/join-requests')).data,
+    enabled: !!isStudent
+  });
+
+  const acceptRequestMutation = useMutation({
+    mutationFn: async (id) => (await api.patch(`/join-requests/${id}/accept`)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['join-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['student-team'] });
+    }
+  });
+
+  const rejectRequestMutation = useMutation({
+    mutationFn: async (id) => (await api.patch(`/join-requests/${id}/reject`)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['join-requests'] });
+    }
+  });
+
+  const pendingCount = requestsData?.incoming?.length || 0;
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -47,6 +88,83 @@ export const Navbar = () => {
         {/* Right Actions */}
         <div className="flex items-center space-x-3 sm:space-x-4">
           <ThemeToggle />
+
+          {/* Student Notification Bell */}
+          {isStudent && (
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={`p-2 rounded-xl border transition-all relative ${
+                  pendingCount > 0
+                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20'
+                    : 'bg-muted/40 text-muted-foreground border-border hover:text-foreground hover:bg-muted'
+                }`}
+                title={pendingCount > 0 ? `${pendingCount} pending team invitation(s)` : 'Notifications'}
+              >
+                <Bell size={18} />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white font-bold text-[9px] flex items-center justify-center animate-pulse">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Bell size={14} className="text-primary" /> Team Invitations
+                    </span>
+                    <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      {pendingCount} Pending
+                    </span>
+                  </div>
+
+                  {pendingCount === 0 ? (
+                    <div className="py-6 text-center text-xs text-muted-foreground">
+                      No pending team invitations.
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5 max-h-64 overflow-y-auto">
+                      {requestsData?.incoming?.map((req) => (
+                        <div
+                          key={req._id}
+                          className="p-3 rounded-xl bg-background border border-border flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            <span className="font-bold text-xs text-foreground block truncate">
+                              {req.fromStudent?.name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground block truncate">
+                              @{req.fromStudent?.githubUsername || 'unlinked'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => acceptRequestMutation.mutate(req._id)}
+                              disabled={acceptRequestMutation.isPending}
+                              className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                              title="Accept Invitation"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => rejectRequestMutation.mutate(req._id)}
+                              disabled={rejectRequestMutation.isPending}
+                              className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                              title="Decline Invitation"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {user && (
             <div className="flex items-center space-x-3 sm:space-x-5 pl-2 border-l border-border">

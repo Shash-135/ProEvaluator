@@ -1,6 +1,15 @@
 const reportingAdminService = require('../../services/admin/reporting.admin.service');
 const { serializeBatchReport, serializeTeacherWorkload } = require('../../serializers/admin/report.serializer');
 
+exports.getExecutiveStats = async (req, res) => {
+  try {
+    const stats = await reportingAdminService.getExecutiveStats();
+    return res.json({ stats });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getBatchAnalytics = async (req, res) => {
   try {
     const { batchId } = req.params;

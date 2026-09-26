@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUiStore } from '../store/useUiStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { X, CheckCircle, AlertCircle, Award, MessageSquare, ExternalLink } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Award, MessageSquare, ExternalLink, BookOpen, Clock } from 'lucide-react';
 import api from '../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -100,19 +100,55 @@ export const GradeModal = () => {
           </div>
 
           {selectedMilestoneForGrading?.deliverableUrl ? (
-            <div className="mb-5 p-3.5 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <ExternalLink size={14} className="text-primary" />
-                <span className="font-bold text-foreground">Attached Deliverable Link</span>
+            <div className="mb-5 p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <ExternalLink size={14} className="text-primary" />
+                  <span className="font-bold text-foreground">Attached Student Deliverable</span>
+                </div>
+                <a
+                  href={selectedMilestoneForGrading.deliverableUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-2.5 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:bg-primary/90 transition-all flex items-center gap-1 shadow-sm"
+                >
+                  Inspect Work <ExternalLink size={11} />
+                </a>
               </div>
-              <a
-                href={selectedMilestoneForGrading.deliverableUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-              >
-                Inspect Work <ExternalLink size={11} />
-              </a>
+              <div className="text-[11px] text-muted-foreground font-mono truncate bg-background/60 p-2 rounded-lg border border-border/60">
+                {selectedMilestoneForGrading.deliverableUrl}
+              </div>
+              <div className="flex items-center gap-2 pt-1 flex-wrap text-[11px]">
+                {selectedMilestoneForGrading.submittedAt && (
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Clock size={11} />
+                    Submitted: {new Date(selectedMilestoneForGrading.submittedAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                )}
+                {(() => {
+                  if (milestoneObj.dueDate && selectedMilestoneForGrading.submittedAt) {
+                    const isLate = new Date(selectedMilestoneForGrading.submittedAt) > new Date(milestoneObj.dueDate);
+                    if (isLate) {
+                      return (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                          Late Submission
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        Submitted On-Time
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
             </div>
           ) : isDeliverableMissing ? (
             <div className="mb-5 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1.5">
@@ -132,6 +168,18 @@ export const GradeModal = () => {
           ) : (
             <div className="mb-5 p-2.5 rounded-xl bg-muted/20 border border-border text-[11px] text-muted-foreground">
               No deliverable URL submitted by student yet (optional for this milestone).
+            </div>
+          )}
+
+          {milestoneObj.rubric && (
+            <div className="mb-5 p-4 rounded-xl bg-muted/30 border border-border space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                <BookOpen size={14} className="text-primary" />
+                <span>Grading Rubric & Guidelines</span>
+              </div>
+              <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
+                {milestoneObj.rubric}
+              </p>
             </div>
           )}
 

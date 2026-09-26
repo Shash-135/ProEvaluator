@@ -3,6 +3,7 @@ const router = express.Router();
 const reportingController = require('../../controllers/admin/reporting.admin.controller');
 const authorizeAction = require('../../middleware/authorizeAction');
 
+router.get('/quick-stats', authorizeAction('reports:view'), reportingController.getExecutiveStats);
 router.get('/batch/:batchId', authorizeAction('reports:view'), reportingController.getBatchAnalytics);
 router.get('/faculty-workload', authorizeAction('reports:view'), reportingController.getFacultyWorkload);
 

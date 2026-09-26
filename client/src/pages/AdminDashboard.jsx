@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../api/client';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
+import { Layers, GraduationCap, UserCheck, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { BatchesTab } from '../components/admin/tabs/BatchesTab';
 import { UsersTab } from '../components/admin/tabs/UsersTab';
 
@@ -67,6 +68,12 @@ export const AdminDashboard = () => {
     enabled: !!selectedBatchId || showMoveMemberModal
   });
 
+  const { data: statsData } = useQuery({
+    queryKey: ['admin-executive-stats'],
+    queryFn: async () => (await api.get('/admin/reports/quick-stats')).data
+  });
+  const stats = statsData?.stats;
+
   const teachers = allUsersData?.users?.filter((u) => u.role === 'teacher') || [];
   const cohorts = cohortsData?.cohorts || [];
   const activeBatch = batchesData?.batches?.find((b) => (b.id || b._id) === selectedBatchId);
@@ -101,7 +108,53 @@ export const AdminDashboard = () => {
       <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} setSelectedBatchId={setSelectedBatchId} setSelectedCohortId={setSelectedCohortId} />
 
       <div className="flex-1 flex flex-col min-w-0 max-h-[calc(100vh-4rem)] overflow-y-auto bg-background">
-        <div className="p-6 lg:p-10 max-w-[90rem] mx-auto w-full">
+        <div className="p-6 lg:p-10 max-w-[90rem] mx-auto w-full space-y-6">
+          {/* Executive Quick-Stats Overview */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-card border border-border shadow-sm flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Layers size={20} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Cohorts / Semesters</span>
+                <span className="text-xl font-black text-foreground">{cohorts.length} / {stats?.totalBatches ?? (batchesData?.batches?.length || 0)}</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-card border border-border shadow-sm flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                <GraduationCap size={20} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Enrolled Students</span>
+                <span className="text-xl font-black text-foreground">{stats?.totalStudents ?? (allUsersData?.users?.filter(u => u.role === 'student')?.length || 0)}</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-card border border-border shadow-sm flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+                <UserCheck size={20} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Active Faculty</span>
+                <span className="text-xl font-black text-foreground">{stats?.totalFaculty ?? teachers.length}</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-card border border-border shadow-sm flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={20} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Evaluator Coverage</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-black text-foreground">{stats?.coveragePercent ?? 0}%</span>
+                  <span className="text-[10px] text-muted-foreground font-semibold">({stats?.assignedTeams ?? 0}/{stats?.totalTeams ?? 0})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {activeTab === 'batches' && (
             <BatchesTab
               batchesData={batchesData}

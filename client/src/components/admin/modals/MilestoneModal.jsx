@@ -18,6 +18,9 @@ export const MilestoneModal = ({
   const [mRequiresExternalReview, setMRequiresExternalReview] = useState(editingMilestone?.requiresExternalReview ?? false);
   const [mRequiresDeliverable, setMRequiresDeliverable] = useState(editingMilestone?.requiresDeliverable ?? false);
   const [mDeliverableInstructions, setMDeliverableInstructions] = useState(editingMilestone?.deliverableInstructions || '');
+  const [mDueDate, setMDueDate] = useState(
+    editingMilestone?.dueDate ? new Date(editingMilestone.dueDate).toISOString().split('T')[0] : ''
+  );
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
@@ -29,6 +32,7 @@ export const MilestoneModal = ({
       setMRequiresExternalReview(editingMilestone.requiresExternalReview ?? false);
       setMRequiresDeliverable(editingMilestone.requiresDeliverable ?? false);
       setMDeliverableInstructions(editingMilestone.deliverableInstructions || '');
+      setMDueDate(editingMilestone.dueDate ? new Date(editingMilestone.dueDate).toISOString().split('T')[0] : '');
     } else {
       setMOrder(1);
       setMTitle('');
@@ -37,6 +41,7 @@ export const MilestoneModal = ({
       setMRequiresExternalReview(false);
       setMRequiresDeliverable(false);
       setMDeliverableInstructions('');
+      setMDueDate('');
     }
     setErrorMsg('');
   }, [editingMilestone]);
@@ -116,7 +121,8 @@ export const MilestoneModal = ({
               rubric: mRubric.trim(),
               requiresExternalReview: mRequiresExternalReview,
               requiresDeliverable: mRequiresDeliverable,
-              deliverableInstructions: mDeliverableInstructions.trim()
+              deliverableInstructions: mDeliverableInstructions.trim(),
+              dueDate: mDueDate ? new Date(mDueDate).toISOString() : null
             };
             if (!editingMilestone) {
               payload.batchId = activeBatchId;
@@ -148,6 +154,16 @@ export const MilestoneModal = ({
                 className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Submission Deadline (Due Date)</label>
+            <input
+              type="date"
+              value={mDueDate}
+              onChange={(e) => setMDueDate(e.target.value)}
+              className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+            />
           </div>
 
           <div>
