@@ -8,7 +8,9 @@ const serializeScoreItem = (item, role, requiresExternalReview) => {
     title: milestone.title,
     dueDate: milestone.dueDate,
     maxScore: milestone.maxScore,
-    requiresExternalReview
+    requiresExternalReview,
+    deliverableUrl: item.deliverableUrl || '',
+    submittedAt: item.submittedAt
   };
 
   if (role === 'teacher') {

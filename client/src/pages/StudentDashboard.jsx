@@ -15,7 +15,9 @@ import {
   Sparkles,
   GitBranch,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ExternalLink,
+  Link2
 } from 'lucide-react';
 import { ContributionBreakdown } from '../components/ContributionBreakdown';
 
@@ -108,6 +110,24 @@ export const StudentDashboard = () => {
     mutationFn: async (repoUrl) => (await api.patch(`/teams/${team._id}/repo`, { repoUrl })).data,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-team'] });
+    }
+  });
+
+  const [editingDeliverableMilestoneId, setEditingDeliverableMilestoneId] = useState(null);
+  const [deliverableInput, setDeliverableInput] = useState('');
+
+  // Submit Milestone Deliverable Mutation
+  const submitDeliverableMutation = useMutation({
+    mutationFn: async ({ milestoneId, deliverableUrl }) =>
+      (await api.patch(`/milestones/students/${user?.id}/deliverable`, {
+        milestoneId,
+        deliverableUrl,
+        batchId: selectedBatchId
+      })).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-scores'] });
+      setEditingDeliverableMilestoneId(null);
+      setDeliverableInput('');
     }
   });
 
@@ -491,8 +511,70 @@ export const StudentDashboard = () => {
                           </div>
                         </div>
 
+                        {/* Deliverable Link Submission Section */}
+                        <div className="mt-4 pt-3 border-t border-border/80">
+                          {editingDeliverableMilestoneId === (mObj._id || item.milestoneId?._id || item.milestoneId) ? (
+                            <div className="flex gap-2 items-center">
+                              <input
+                                type="url"
+                                value={deliverableInput}
+                                onChange={(e) => setDeliverableInput(e.target.value)}
+                                placeholder="https://github.com/.../pull/1 or demo link"
+                                className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-primary outline-none"
+                              />
+                              <button
+                                onClick={() =>
+                                  submitDeliverableMutation.mutate({
+                                    milestoneId: mObj._id || item.milestoneId?._id || item.milestoneId,
+                                    deliverableUrl: deliverableInput
+                                  })
+                                }
+                                disabled={!deliverableInput.trim() || submitDeliverableMutation.isPending}
+                                className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-xl hover:bg-primary/90 transition shadow-sm disabled:opacity-50"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingDeliverableMilestoneId(null)}
+                                className="px-3 py-1.5 bg-muted text-foreground text-xs font-bold rounded-xl hover:bg-muted/80 transition"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between text-xs">
+                              {item.deliverableUrl ? (
+                                <div className="flex items-center gap-2">
+                                  <Link2 size={13} className="text-primary" />
+                                  <span className="text-[11px] font-bold text-muted-foreground">Deliverable:</span>
+                                  <a
+                                    href={item.deliverableUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-primary font-bold hover:underline flex items-center gap-1 truncate max-w-xs"
+                                  >
+                                    {item.deliverableUrl.replace(/^https?:\/\//, '')} <ExternalLink size={11} />
+                                  </a>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground italic">No deliverable link attached</span>
+                              )}
+
+                              <button
+                                onClick={() => {
+                                  setEditingDeliverableMilestoneId(mObj._id || item.milestoneId?._id || item.milestoneId);
+                                  setDeliverableInput(item.deliverableUrl || '');
+                                }}
+                                className="text-[11px] font-bold text-primary hover:underline"
+                              >
+                                {item.deliverableUrl ? 'Edit Link' : '+ Add Deliverable Link'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
                         {item.comments && (
-                          <div className="mt-4 p-3.5 rounded-xl bg-card border border-border text-xs text-foreground flex items-start gap-2.5">
+                          <div className="mt-3.5 p-3.5 rounded-xl bg-card border border-border text-xs text-foreground flex items-start gap-2.5">
                             <MessageSquare size={14} className="text-primary shrink-0 mt-0.5" />
                             <div>
                               <span className="font-bold text-muted-foreground text-[10px] uppercase tracking-wider block mb-0.5">Faculty Feedback</span>

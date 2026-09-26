@@ -106,3 +106,35 @@ exports.getTeamSummary = async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch team summary: ' + error.message });
   }
 };
+
+exports.submitDeliverable = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { milestoneId, deliverableUrl, batchId } = req.body;
+
+    if (!milestoneId || !deliverableUrl) {
+      return res.status(400).json({ error: 'milestoneId and deliverableUrl are required.' });
+    }
+
+    const query = { studentId };
+    if (batchId) query.batchId = batchId;
+
+    const doc = await StudentMilestoneScore.findOne(query);
+    if (!doc) {
+      return res.status(404).json({ error: 'Student score record not found.' });
+    }
+
+    const item = doc.scores.find(s => s.milestoneId.toString() === milestoneId.toString());
+    if (!item) {
+      return res.status(404).json({ error: 'Milestone not found in student score record.' });
+    }
+
+    item.deliverableUrl = deliverableUrl.trim();
+    item.submittedAt = new Date();
+    await doc.save();
+
+    return res.json({ message: 'Deliverable submitted successfully', studentScore: doc });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};

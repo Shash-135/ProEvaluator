@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUiStore } from '../store/useUiStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { X, CheckCircle, AlertCircle, Award, MessageSquare } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Award, MessageSquare, ExternalLink } from 'lucide-react';
 import api from '../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -87,10 +87,31 @@ export const GradeModal = () => {
         </div>
 
         <div className="p-6">
-          <div className="mb-6 p-4 rounded-xl bg-background border border-border">
+          <div className="mb-4 p-4 rounded-xl bg-background border border-border">
              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Milestone Name</div>
              <div className="text-base font-bold text-foreground">{milestoneObj.title}</div>
           </div>
+
+          {selectedMilestoneForGrading?.deliverableUrl ? (
+            <div className="mb-5 p-3.5 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <ExternalLink size={14} className="text-primary" />
+                <span className="font-bold text-foreground">Attached Deliverable Link</span>
+              </div>
+              <a
+                href={selectedMilestoneForGrading.deliverableUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+              >
+                Inspect Work <ExternalLink size={11} />
+              </a>
+            </div>
+          ) : (
+            <div className="mb-5 p-2.5 rounded-xl bg-muted/20 border border-border text-[11px] text-muted-foreground">
+              No deliverable URL submitted by student yet.
+            </div>
+          )}
 
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3 animate-in slide-in-from-top-2">
