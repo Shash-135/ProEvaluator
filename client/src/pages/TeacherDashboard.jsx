@@ -14,8 +14,10 @@ import {
   BookOpen,
   UserCheck,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  FileSpreadsheet
 } from 'lucide-react';
+import { downloadCsv } from '../utils/exportCsv';
 
 export const TeacherDashboard = () => {
   const { openGradeModal } = useUiStore();
@@ -56,6 +58,29 @@ export const TeacherDashboard = () => {
     } finally {
       setForceSyncing(false);
     }
+  };
+
+  const handleExportCsv = () => {
+    if (!summaryData?.students || summaryData.students.length === 0) return;
+    const sampleScores = summaryData.students[0]?.scores || [];
+    const milestoneHeaders = sampleScores.map(s => `M${s.order} (${s.milestoneId?.title || ''})`);
+    const headers = ['Student Name', 'Email', 'GitHub Username', 'Team Name', ...milestoneHeaders, 'Total Score', 'Percent Completed'];
+
+    const rows = summaryData.students.map(row => {
+      const scoreCols = (row.scores || []).map(s => s.status === 'graded' ? s.score : 'N/A');
+      return [
+        row.student.name,
+        row.student.email,
+        row.student.githubUsername || '',
+        activeTeam?.name || '',
+        ...scoreCols,
+        row.progressSummary?.totalScore || 0,
+        `${row.progressSummary?.percentComplete || 0}%`
+      ];
+    });
+
+    const filename = `${activeTeam?.name || 'team'}_grades_${new Date().toISOString().split('T')[0]}`;
+    downloadCsv(filename, headers, rows);
   };
 
   const activeTeam = teams.find((t) => t._id === activeTeamId);
@@ -109,6 +134,15 @@ export const TeacherDashboard = () => {
 
         {activeTeam && (
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCsv}
+              className="px-3.5 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-bold hover:bg-muted transition-all flex items-center gap-1.5 shadow-sm"
+              title="Download Team Grade Sheet CSV"
+            >
+              <FileSpreadsheet size={14} className="text-emerald-600" />
+              <span>Export CSV</span>
+            </button>
+
             {activeTeam.repoUrl && (
               <a
                 href={activeTeam.repoUrl}

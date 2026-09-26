@@ -1,7 +1,8 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/client';
-import { BookOpen, Plus, ArrowLeft, RefreshCw, Users, MoveRight, XCircle } from 'lucide-react';
+import { BookOpen, Plus, ArrowLeft, RefreshCw, Users, MoveRight, XCircle, FileSpreadsheet } from 'lucide-react';
+import { downloadCsv } from '../../../utils/exportCsv';
 export const BatchesTab = ({
   cohortsData,
   selectedCohortId,
@@ -203,6 +204,28 @@ export const BatchesTab = ({
     );
   }
 
+  const handleExportBatchRoster = () => {
+    if (!teamsData?.teams || teamsData.teams.length === 0) {
+      alert('No teams available to export for this semester.');
+      return;
+    }
+    const headers = ['Team Name', 'Team Status', 'Evaluator', 'Member Name', 'Member Email', 'GitHub Username'];
+    const rows = [];
+    teamsData.teams.forEach(t => {
+      const evaluatorName = t.assignedTeacherId?.name || 'Unassigned';
+      if (!t.members || t.members.length === 0) {
+        rows.push([t.name, t.status, evaluatorName, 'No Members', '', '']);
+      } else {
+        t.members.forEach(m => {
+          rows.push([t.name, t.status, evaluatorName, m.name || '', m.email || '', m.githubUsername || '']);
+        });
+      }
+    });
+
+    const filename = `${activeBatch?.name || 'semester'}_teams_roster_${new Date().toISOString().split('T')[0]}`;
+    downloadCsv(filename, headers, rows);
+  };
+
   return (
     <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -221,19 +244,30 @@ export const BatchesTab = ({
           <div>
             <h2 className="text-2xl font-black text-foreground">{activeBatch?.name}</h2>
           </div>
-          <div className="flex items-center bg-muted p-1 rounded-xl">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setBatchDetailTab('milestones')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${batchDetailTab === 'milestones' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={handleExportBatchRoster}
+              className="px-3 py-2 rounded-xl bg-background hover:bg-muted text-xs font-bold text-foreground border border-border transition-colors flex items-center gap-1.5 shadow-sm"
+              title="Export Batch Roster & Teams CSV"
             >
-              Milestones
+              <FileSpreadsheet size={14} className="text-emerald-600" />
+              <span>Export Roster CSV</span>
             </button>
-            <button
-              onClick={() => setBatchDetailTab('teams')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${batchDetailTab === 'teams' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              Team Oversight
-            </button>
+
+            <div className="flex items-center bg-muted p-1 rounded-xl">
+              <button
+                onClick={() => setBatchDetailTab('milestones')}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${batchDetailTab === 'milestones' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Milestones
+              </button>
+              <button
+                onClick={() => setBatchDetailTab('teams')}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${batchDetailTab === 'teams' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Team Oversight
+              </button>
+            </div>
           </div>
        </div>
 
