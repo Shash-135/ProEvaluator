@@ -36,8 +36,15 @@ export const GradeModal = () => {
   const milestoneId = milestoneObj._id || selectedMilestoneForGrading.milestoneId;
   const maxScore = milestoneObj.maxScore || 100;
 
+  const requiresDeliverable = selectedMilestoneForGrading?.requiresDeliverable || milestoneObj?.requiresDeliverable;
+  const isDeliverableMissing = requiresDeliverable && !selectedMilestoneForGrading?.deliverableUrl?.trim();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isDeliverableMissing) {
+      setError('Evaluation blocked: Student must submit the required deliverable first.');
+      return;
+    }
     setSubmitting(true);
     setError('');
 
@@ -107,9 +114,24 @@ export const GradeModal = () => {
                 Inspect Work <ExternalLink size={11} />
               </a>
             </div>
+          ) : isDeliverableMissing ? (
+            <div className="mb-5 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1.5">
+              <div className="flex items-center gap-2 font-bold">
+                <AlertCircle size={15} />
+                <span>Mandatory Deliverable Missing</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-destructive/90">
+                Evaluation is blocked because this milestone requires a student deliverable submission.
+              </p>
+              {milestoneObj.deliverableInstructions && (
+                <p className="text-[10px] text-muted-foreground font-medium pt-1">
+                  Required: {milestoneObj.deliverableInstructions}
+                </p>
+              )}
+            </div>
           ) : (
             <div className="mb-5 p-2.5 rounded-xl bg-muted/20 border border-border text-[11px] text-muted-foreground">
-              No deliverable URL submitted by student yet.
+              No deliverable URL submitted by student yet (optional for this milestone).
             </div>
           )}
 
@@ -132,8 +154,9 @@ export const GradeModal = () => {
                   max={maxScore}
                   value={score}
                   onChange={(e) => setScore(e.target.value)}
+                  disabled={isDeliverableMissing}
                   required
-                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary shadow-sm placeholder:text-muted-foreground/50 transition-all"
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary shadow-sm placeholder:text-muted-foreground/50 transition-all disabled:opacity-50"
                   placeholder={`Max score: ${maxScore}`}
                 />
                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-muted-foreground font-medium text-sm">
@@ -154,7 +177,8 @@ export const GradeModal = () => {
                   rows="4"
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
-                  className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm placeholder:text-muted-foreground/50 transition-all resize-none"
+                  disabled={isDeliverableMissing}
+                  className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm placeholder:text-muted-foreground/50 transition-all resize-none disabled:opacity-50"
                   placeholder="Provide constructive feedback for the student..."
                 ></textarea>
               </div>
@@ -170,15 +194,16 @@ export const GradeModal = () => {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
-                className="px-5 py-2.5 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-xl shadow-sm flex items-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed group"
+                disabled={submitting || isDeliverableMissing}
+                className="px-5 py-2.5 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-xl shadow-sm flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                title={isDeliverableMissing ? 'Evaluation blocked: Deliverable required' : ''}
               >
                 {submitting ? (
                    <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
                 ) : (
                   <CheckCircle size={16} className="group-hover:scale-110 transition-transform" />
                 )}
-                {submitting ? 'Saving...' : 'Save Evaluation'}
+                {submitting ? 'Saving...' : isDeliverableMissing ? 'Blocked: Needs Deliverable' : 'Save Evaluation'}
               </button>
             </div>
           </form>

@@ -70,8 +70,18 @@ class MilestoneService {
       });
     }
 
-    // Update specific milestone item
+    // Find specific milestone item
     const milestoneItem = studentScoreDoc.scores.find((s) => s.milestoneId.toString() === milestoneId.toString());
+
+    // Check mandatory deliverable requirement
+    if (milestoneTemplate.requiresDeliverable) {
+      const existingDeliverable = milestoneItem ? milestoneItem.deliverableUrl : null;
+      if (!existingDeliverable || !existingDeliverable.trim()) {
+        throw new Error('Evaluation blocked: Student has not submitted the mandatory milestone deliverable yet.');
+      }
+    }
+
+    // Update specific milestone item
     if (!milestoneItem) {
       studentScoreDoc.scores.push({
         milestoneId,

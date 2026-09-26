@@ -50,6 +50,11 @@ const gradeStudentMilestone = async ({ teacherId, studentId, milestoneId, score,
     throw new Error(`Score must be between 0 and ${maxScore}`);
   }
 
+  // Enforce mandatory deliverable submission if required by admin
+  if (scoreItem.milestoneId.requiresDeliverable && (!scoreItem.deliverableUrl || !scoreItem.deliverableUrl.trim())) {
+    throw new Error('Evaluation blocked: Student has not submitted the mandatory milestone deliverable yet.');
+  }
+
   const beforeSnapshot = { score: scoreItem.score, comments: scoreItem.comments, status: scoreItem.status };
 
   scoreItem.score = score;

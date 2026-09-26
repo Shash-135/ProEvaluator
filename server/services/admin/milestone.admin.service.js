@@ -10,14 +10,17 @@ class MilestoneAdminService {
   }
 
   async createMilestone(data, adminId) {
-    const { batchId, order, title, maxScore, rubric, dueDate } = data;
+    const { batchId, order, title, maxScore, rubric, dueDate, requiresExternalReview, requiresDeliverable, deliverableInstructions } = data;
     const milestone = await Milestone.create({
       batchId,
       order,
       title,
       maxScore: maxScore || 100,
       rubric,
-      dueDate
+      dueDate,
+      requiresExternalReview: !!requiresExternalReview,
+      requiresDeliverable: !!requiresDeliverable,
+      deliverableInstructions: deliverableInstructions || ''
     });
 
     await AdminActionLog.create({
@@ -42,6 +45,9 @@ class MilestoneAdminService {
     if (data.maxScore !== undefined) milestone.maxScore = data.maxScore;
     if (data.rubric !== undefined) milestone.rubric = data.rubric;
     if (data.dueDate !== undefined) milestone.dueDate = data.dueDate;
+    if (data.requiresExternalReview !== undefined) milestone.requiresExternalReview = data.requiresExternalReview;
+    if (data.requiresDeliverable !== undefined) milestone.requiresDeliverable = data.requiresDeliverable;
+    if (data.deliverableInstructions !== undefined) milestone.deliverableInstructions = data.deliverableInstructions;
 
     await milestone.save();
 

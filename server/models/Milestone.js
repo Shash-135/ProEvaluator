@@ -31,6 +31,15 @@ const milestoneSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    requiresDeliverable: {
+      type: Boolean,
+      default: false
+    },
+    deliverableInstructions: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     dueDate: {
       type: Date
     }

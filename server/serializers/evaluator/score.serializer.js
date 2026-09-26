@@ -9,6 +9,8 @@ const serializeScoreItem = (item, role, requiresExternalReview) => {
     dueDate: milestone.dueDate,
     maxScore: milestone.maxScore,
     requiresExternalReview,
+    requiresDeliverable: milestone.requiresDeliverable || false,
+    deliverableInstructions: milestone.deliverableInstructions || '',
     deliverableUrl: item.deliverableUrl || '',
     submittedAt: item.submittedAt
   };

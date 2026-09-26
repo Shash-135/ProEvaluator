@@ -9,6 +9,8 @@ export const MilestoneModal = ({ setShowMilestoneModal, activeBatchId }) => {
   const [mMaxScore, setMMaxScore] = useState(100);
   const [mRubric, setMRubric] = useState('');
   const [mRequiresExternalReview, setMRequiresExternalReview] = useState(false);
+  const [mRequiresDeliverable, setMRequiresDeliverable] = useState(false);
+  const [mDeliverableInstructions, setMDeliverableInstructions] = useState('');
 
   const createMilestoneMutation = useMutation({
     mutationFn: async (payload) => (await api.post('/admin/milestones', payload)).data,
@@ -20,7 +22,7 @@ export const MilestoneModal = ({ setShowMilestoneModal, activeBatchId }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in zoom-in-95 duration-200">
+      <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-bold text-foreground mb-4">Add Milestone Template</h3>
         <form
           onSubmit={(e) => {
@@ -31,7 +33,9 @@ export const MilestoneModal = ({ setShowMilestoneModal, activeBatchId }) => {
               title: mTitle,
               maxScore: Number(mMaxScore),
               rubric: mRubric,
-              requiresExternalReview: mRequiresExternalReview
+              requiresExternalReview: mRequiresExternalReview,
+              requiresDeliverable: mRequiresDeliverable,
+              deliverableInstructions: mDeliverableInstructions
             });
           }}
           className="space-y-4"
@@ -92,6 +96,36 @@ export const MilestoneModal = ({ setShowMilestoneModal, activeBatchId }) => {
             <label htmlFor="reqExtRev" className="text-sm font-semibold text-foreground cursor-pointer">
               Requires Independent External Review
             </label>
+          </div>
+
+          <div className="space-y-3 bg-muted/50 p-3.5 rounded-xl border border-border">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="reqDeliv"
+                checked={mRequiresDeliverable}
+                onChange={(e) => setMRequiresDeliverable(e.target.checked)}
+                className="rounded border-border text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="reqDeliv" className="text-sm font-semibold text-foreground cursor-pointer">
+                Mandatory Student Deliverable Submission
+              </label>
+            </div>
+
+            {mRequiresDeliverable && (
+              <div className="pt-2 border-t border-border/60">
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  Deliverable Instructions / Type
+                </label>
+                <input
+                  type="text"
+                  value={mDeliverableInstructions}
+                  onChange={(e) => setMDeliverableInstructions(e.target.value)}
+                  placeholder="e.g. Pull Request URL, Demo video, or Report PDF link"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">

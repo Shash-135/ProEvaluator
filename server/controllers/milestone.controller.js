@@ -5,14 +5,17 @@ const { ROLES } = require('../constants');
 
 exports.createMilestone = async (req, res) => {
   try {
-    const { batchId, order, title, maxScore, rubric, dueDate } = req.body;
+    const { batchId, order, title, maxScore, rubric, dueDate, requiresExternalReview, requiresDeliverable, deliverableInstructions } = req.body;
     const milestone = await Milestone.create({
       batchId,
       order,
       title,
       maxScore: maxScore || 100,
       rubric,
-      dueDate
+      dueDate,
+      requiresExternalReview: !!requiresExternalReview,
+      requiresDeliverable: !!requiresDeliverable,
+      deliverableInstructions: deliverableInstructions || ''
     });
     return res.status(201).json({ milestone });
   } catch (error) {
@@ -42,7 +45,7 @@ exports.getStudentScores = async (req, res) => {
     }
 
     let scoresDoc = await StudentMilestoneScore.findOne({ studentId, batchId })
-      .populate('scores.milestoneId', 'title order maxScore rubric dueDate')
+      .populate('scores.milestoneId', 'title order maxScore rubric dueDate requiresExternalReview requiresDeliverable deliverableInstructions')
       .populate('scores.gradedBy', 'name');
 
     if (!scoresDoc) {
@@ -64,7 +67,7 @@ exports.getStudentScores = async (req, res) => {
         batchId: batch._id
       });
       scoresDoc = await StudentMilestoneScore.findById(scoresDoc._id)
-        .populate('scores.milestoneId', 'title order maxScore rubric dueDate')
+        .populate('scores.milestoneId', 'title order maxScore rubric dueDate requiresExternalReview requiresDeliverable deliverableInstructions')
         .populate('scores.gradedBy', 'name');
     }
 
